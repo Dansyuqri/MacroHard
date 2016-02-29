@@ -31,6 +31,8 @@ public class SomeGame extends ApplicationAdapter {
 	private Array<Rectangle> sideWalls;
 	private long lastDropTime;
 
+	//dfgsfgd
+
 	@Override
 	public void create() {
 		// load the images for the droplet and the bucket, 64x64 pixels each
