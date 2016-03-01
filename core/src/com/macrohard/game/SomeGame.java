@@ -193,7 +193,7 @@ public class SomeGame extends ApplicationAdapter {
 
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
-		if(TimeUtils.nanoTime() - lastDropTime > 320000000) {
+		if(TimeUtils.nanoTime() - lastDropTime > 640000000) {
 			wallCoord(path);
 			spawnObstacle(current);
 			spawnSides();
@@ -204,7 +204,7 @@ public class SomeGame extends ApplicationAdapter {
 		// the screen or that hit the player. In the later case we play back
 		// a sound effect as well.
 
-		player.y -= 200*Gdx.graphics.getDeltaTime();
+		player.y -= 100*Gdx.graphics.getDeltaTime();
 
 		Iterator<Rectangle> iter = obstacles.iterator();
 		Iterator<Rectangle> iter2 = sideWalls.iterator();
