@@ -44,7 +44,7 @@ public class SomeGame extends ApplicationAdapter {
 		// load the images for the droplet and the player, 64x64 pixels each
 		dropImage = new Texture(Gdx.files.internal("wall1.1.png"));
 		wallImage = new Texture(Gdx.files.internal("wall1.2.png"));
-		playerImage = new Texture(Gdx.files.internal("player.png"));
+		playerImage = new Texture(Gdx.files.internal("bucket.png"));
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 
 		// load the drop sound effect and the rain background "music"
@@ -63,7 +63,7 @@ public class SomeGame extends ApplicationAdapter {
 		// create a Rectangle to logically represent the player
 		player = new Rectangle();
 		player.x = 480 / 2 - 64 / 2; // center the player horizontally
-		player.y = 400; // bottom left corner of the player is 20 pixels above the bottom screen edge
+		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
 		player.width = 64;
 		player.height = 64;
 
