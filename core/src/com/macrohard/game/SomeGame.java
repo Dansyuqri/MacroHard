@@ -1,7 +1,6 @@
 package com.macrohard.game;
 
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -23,12 +22,14 @@ public class SomeGame extends ApplicationAdapter {
 	private Texture dropImage;
 	private Texture wallImage;
 	private Texture bucketImage;
+	private Texture joystickImage;
 	private Sound dropSound;
 	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
 	private Rectangle bucket;
-	private Array<Rectangle> raindrops;
+	private Rectangle joystick;
+	private Array<Rectangle> obstacles;
 	private Array<Rectangle> sideWalls;
 	private long lastDropTime;
 	boolean[] path;
@@ -38,10 +39,16 @@ public class SomeGame extends ApplicationAdapter {
 
 	@Override
 	public void create() {
+
+		//TODO: For later development declare all constants first instead of using them directly
+		//TODO: For later development try to have an object hierarchy and place things like their images in private fields (Minh/Syuqri)
+		//TODO: For later development also separate certain methods into different threads, e.g. maybe rendering and spawning obstacles can have individual threads (Syuqri)
+
 		// load the images for the droplet and the bucket, 64x64 pixels each
 		dropImage = new Texture(Gdx.files.internal("wall1.1.png"));
 		wallImage = new Texture(Gdx.files.internal("wall1.2.png"));
 		bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 
 		// load the drop sound effect and the rain background "music"
 //		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -63,12 +70,19 @@ public class SomeGame extends ApplicationAdapter {
 		bucket.width = 64;
 		bucket.height = 64;
 
-		// create the raindrops array and spawn the first raindrop
-		raindrops = new Array<Rectangle>();
+		// create joystick
+		joystick = new Rectangle();
+		joystick.x = 350;
+		joystick.y = 30;
+		joystick.height = 100;
+		joystick.width = 100;
+
+		// create the obstacles array and spawn the first raindrop
+		obstacles = new Array<Rectangle>();
 		sideWalls = new Array<Rectangle>();
 		boolean[] temp = {true, true, true, true, true, true, true};
 		wallCoord(temp);
-		spawnRaindrop(current);
+		spawnObstacle(current);
 		spawnSides();
 	}
 
@@ -115,15 +129,15 @@ public class SomeGame extends ApplicationAdapter {
 		path = pathin;
 	}
 
-	private void spawnRaindrop(boolean[] map) {
+	private void spawnObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
-				Rectangle raindrop = new Rectangle();
-			raindrop.x = (64 * i) + 16;
-			raindrop.y = 800;
-			raindrop.width = 64;
-			raindrop.height = 64;
-			raindrops.add(raindrop);
+				Rectangle obstacle = new Rectangle();
+			obstacle.x = (64 * i) + 16;
+			obstacle.y = 800;
+			obstacle.width = 64;
+			obstacle.height = 64;
+			obstacles.add(obstacle);
 		}
 		current[i] = false;
 	}
@@ -161,40 +175,38 @@ public class SomeGame extends ApplicationAdapter {
 		// all drops
 		batch.begin();
 		batch.draw(bucketImage, bucket.x, bucket.y);
-		for(Rectangle raindrop: raindrops) {
-			batch.draw(dropImage, raindrop.x, raindrop.y);
+		for(Rectangle obstacle: obstacles) {
+			batch.draw(dropImage, obstacle.x, obstacle.y);
 		}
 		for(Rectangle side: sideWalls){
 			batch.draw(wallImage, side.x, side.y);
 		}
+		batch.draw(joystickImage, joystick.x, joystick.y);
 		batch.end();
 
 		// process user input
-		if(Gdx.input.isTouched()) {
-			Vector3 touchPos = new Vector3();
-			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-			camera.unproject(touchPos);
-			bucket.x = touchPos.x - 64 / 2;
-		}
-		if(Gdx.input.isKeyPressed(Keys.LEFT)) bucket.x -= 200 * Gdx.graphics.getDeltaTime();
-		if(Gdx.input.isKeyPressed(Keys.RIGHT)) bucket.x += 200 * Gdx.graphics.getDeltaTime();
+		processInput();
 
 		// make sure the bucket stays within the screen bounds
-		if(bucket.x < 0) bucket.x = 0;
-		if(bucket.x > 480 - 64) bucket.x = 480 - 64;
+
+		collisionCheck();
+
+//		if(bucket.x < 0) bucket.x = 0;
+//		if(bucket.x > 480 - 64) bucket.x = 480 - 64;
 
 		// check if we need to create a new raindrop
+		//TODO: Implement alternate checking mechanism (Sam)
 		if(TimeUtils.nanoTime() - lastDropTime > 320000000) {
 			wallCoord(path);
-			spawnRaindrop(current);
+			spawnObstacle(current);
 			spawnSides();
 		}
 
 
-		// move the raindrops, remove any that are beneath the bottom edge of
+		// move the obstacles, remove any that are beneath the bottom edge of
 		// the screen or that hit the bucket. In the later case we play back
 		// a sound effect as well.
-		Iterator<Rectangle> iter = raindrops.iterator();
+		Iterator<Rectangle> iter = obstacles.iterator();
 		Iterator<Rectangle> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
@@ -212,12 +224,67 @@ public class SomeGame extends ApplicationAdapter {
 		}
 	}
 
+	private void processInput() {
+		if (Gdx.input.isTouched()) {
+			Vector3 touchPos = new Vector3();
+			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+			camera.unproject(touchPos);
+			// check if touch is within joystick hitbox with buffer
+
+			float relativex = touchPos.x - (joystick.x + joystick.width/2);
+			float relativey = touchPos.y - (joystick.y + joystick.height/2);
+			if (Math.abs(relativex) < joystick.width
+					&& (Math.abs(relativey) < joystick.height)){
+				if (relativex > 0 && relativex > relativey){
+					moveRight();
+					return;
+				}
+
+				if (relativex < 0 && relativex < relativey){
+					moveLeft();
+					return;
+				}
+
+				if (relativey > 0 && relativey > relativex){
+					moveUp();
+					return;
+				}
+
+				if (relativey < 0 && relativey < relativex){
+					moveDown();
+					return;
+				}
+			}
+		}
+	}
+
+	private void collisionCheck(){
+		//TODO: Check for collisions and handle them (Minh)
+	}
+
+	private void moveUp(){
+		bucket.y += 200*Gdx.graphics.getDeltaTime();
+	}
+
+	private void moveDown(){
+		bucket.y -= 200*Gdx.graphics.getDeltaTime();
+	}
+
+	private void moveRight(){
+		bucket.x += 200*Gdx.graphics.getDeltaTime();
+	}
+
+	private void moveLeft(){
+		bucket.x -= 200*Gdx.graphics.getDeltaTime();
+	}
+
 	@Override
 	public void dispose() {
 		// dispose of all the native resources
 		dropImage.dispose();
 		wallImage.dispose();
 		bucketImage.dispose();
+		joystickImage.dispose();
 //		dropSound.dispose();
 //		rainMusic.dispose();
 		batch.dispose();
