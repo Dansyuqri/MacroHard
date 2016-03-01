@@ -63,7 +63,7 @@ public class SomeGame extends ApplicationAdapter {
 		// create a Rectangle to logically represent the player
 		player = new Rectangle();
 		player.x = 480 / 2 - 64 / 2; // center the player horizontally
-		player.y = 20; // bottom left corner of the player is 20 pixels above the bottom screen edge
+		player.y = 400; // bottom left corner of the player is 20 pixels above the bottom screen edge
 		player.width = 64;
 		player.height = 64;
 
