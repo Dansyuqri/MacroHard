@@ -210,7 +210,7 @@ public class SomeGame extends ApplicationAdapter {
 		Iterator<Rectangle> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
-			raindrop.y -= 200*Gdx.graphics.getDeltaTime();
+			raindrop.y -= 100*Gdx.graphics.getDeltaTime();
 			if(raindrop.y + 64 < 0) iter.remove();
 //			if(raindrop.overlaps(player)) {
 //				dropSound.play();
@@ -219,7 +219,7 @@ public class SomeGame extends ApplicationAdapter {
 		}
 		while(iter2.hasNext()) {
 			Rectangle side = iter2.next();
-			side.y -= 200*Gdx.graphics.getDeltaTime();
+			side.y -= 100*Gdx.graphics.getDeltaTime();
 			if(side.y + 64 < 0) iter2.remove();
 		}
 	}
