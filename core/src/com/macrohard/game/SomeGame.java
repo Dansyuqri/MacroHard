@@ -1,6 +1,7 @@
 package com.macrohard.game;
 
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -30,6 +31,8 @@ public class SomeGame extends ApplicationAdapter {
 	private Array<Rectangle> raindrops;
 	private Array<Rectangle> sideWalls;
 	private long lastDropTime;
+	boolean[] path;
+	boolean[] current = {false, false, false, false, false, false, false};
 
 	@Override
 	public void create() {
@@ -61,23 +64,69 @@ public class SomeGame extends ApplicationAdapter {
 		// create the raindrops array and spawn the first raindrop
 		raindrops = new Array<Rectangle>();
 		sideWalls = new Array<Rectangle>();
-		int temp = MathUtils.random(0,5);
-		for (int i = 0; i < temp; i++) {
-			spawnRaindrop();
-		}
+		boolean[] temp = {true, true, true, true, true, true, true};
+		wallCoord(temp);
+		spawnRaindrop(current);
 		spawnSides();
 	}
 
-	private void spawnRaindrop() {
-		Rectangle raindrop = new Rectangle();
-		int temp = MathUtils.random(0, 6);
-		raindrop.x = (64 * temp)+16;
-		raindrop.y = 800;
-		raindrop.width = 64;
-		raindrop.height = 64;
-		raindrops.add(raindrop);
-		lastDropTime = TimeUtils.nanoTime();
+	private void wallCoord(boolean[] pathin){
+		boolean test = false;
+		int out_index = 0;
+
+		while (!test) {
+			int temp = MathUtils.random(0, 5);
+			for (int i = 0; i < temp; i++) {
+				int coord = MathUtils.random(0,6);
+				current[coord] = true;
+			}
+			for (int i = 0; i < current.length; i++){
+				if (current[i] && pathin[i]){
+					test = true;
+					break;
+				}
+			}
+		}
+		for (int k = 0; k < current.length; k++) {
+			if (current[k] && pathin[k]) {
+				pathin[k] = true;
+				out_index = k;
+			} else {
+				pathin[k] = false;
+			}
+		}
+		for (int j = 1; j < current.length; j++) {
+			if (out_index + j < current.length) {
+				if (current[out_index + j] && pathin[out_index + j - 1]) {
+					pathin[out_index + j] = true;
+				}
+			}
+			if (out_index - j >= 0) {
+				if (current[out_index - j] && pathin[out_index - j + 1]) {
+					pathin[out_index - j] = true;
+				}
+				else{
+					break;
+				}
+			}
+		}
+		path = pathin;
 	}
+
+	private void spawnRaindrop(boolean[] map) {
+		for (int i = 0; i < map.length; i++) {
+			if (!map[i]) {
+				Rectangle raindrop = new Rectangle();
+			raindrop.x = (64 * i) + 16;
+			raindrop.y = 800;
+			raindrop.width = 64;
+			raindrop.height = 64;
+			raindrops.add(raindrop);
+		}
+		current[i] = false;
+	}
+	lastDropTime = TimeUtils.nanoTime();
+}
 
 	private void spawnSides(){
 		for (int i = 0; i < 2; i++) {
@@ -134,10 +183,8 @@ public class SomeGame extends ApplicationAdapter {
 
 		// check if we need to create a new raindrop
 		if(TimeUtils.nanoTime() - lastDropTime > 320000000) {
-			int temp = MathUtils.random(0,5);
-			for (int i = 0; i < temp; i++) {
-				spawnRaindrop();
-			}
+			wallCoord(path);
+			spawnRaindrop(current);
 			spawnSides();
 		}
 
