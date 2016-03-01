@@ -34,6 +34,8 @@ public class SomeGame extends ApplicationAdapter {
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
 
+	//dfgsfgd
+
 	@Override
 	public void create() {
 		// load the images for the droplet and the bucket, 64x64 pixels each
