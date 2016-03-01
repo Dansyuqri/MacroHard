@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
@@ -21,21 +20,19 @@ import com.badlogic.gdx.utils.TimeUtils;
 public class SomeGame extends ApplicationAdapter {
 	private Texture dropImage;
 	private Texture wallImage;
-	private Texture bucketImage;
+	private Texture playerImage;
 	private Texture joystickImage;
 	private Sound dropSound;
 	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
-	private Rectangle bucket;
+	private Rectangle player;
 	private Rectangle joystick;
 	private Array<Rectangle> obstacles;
 	private Array<Rectangle> sideWalls;
 	private long lastDropTime;
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
-
-	//dfgsfgd
 
 	@Override
 	public void create() {
@@ -44,10 +41,10 @@ public class SomeGame extends ApplicationAdapter {
 		//TODO: For later development try to have an object hierarchy and place things like their images in private fields (Minh/Syuqri)
 		//TODO: For later development also separate certain methods into different threads, e.g. maybe rendering and spawning obstacles can have individual threads (Syuqri)
 
-		// load the images for the droplet and the bucket, 64x64 pixels each
+		// load the images for the droplet and the player, 64x64 pixels each
 		dropImage = new Texture(Gdx.files.internal("wall1.1.png"));
 		wallImage = new Texture(Gdx.files.internal("wall1.2.png"));
-		bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+		playerImage = new Texture(Gdx.files.internal("player.png"));
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 
 		// load the drop sound effect and the rain background "music"
@@ -63,12 +60,12 @@ public class SomeGame extends ApplicationAdapter {
 		camera.setToOrtho(false, 480, 800);
 		batch = new SpriteBatch();
 
-		// create a Rectangle to logically represent the bucket
-		bucket = new Rectangle();
-		bucket.x = 480 / 2 - 64 / 2; // center the bucket horizontally
-		bucket.y = 20; // bottom left corner of the bucket is 20 pixels above the bottom screen edge
-		bucket.width = 64;
-		bucket.height = 64;
+		// create a Rectangle to logically represent the player
+		player = new Rectangle();
+		player.x = 480 / 2 - 64 / 2; // center the player horizontally
+		player.y = 20; // bottom left corner of the player is 20 pixels above the bottom screen edge
+		player.width = 64;
+		player.height = 64;
 
 		// create joystick
 		joystick = new Rectangle();
@@ -171,10 +168,10 @@ public class SomeGame extends ApplicationAdapter {
 		// coordinate system specified by the camera.
 		batch.setProjectionMatrix(camera.combined);
 
-		// begin a new batch and draw the bucket and
+		// begin a new batch and draw the player and
 		// all drops
 		batch.begin();
-		batch.draw(bucketImage, bucket.x, bucket.y);
+		batch.draw(playerImage, player.x, player.y);
 		for(Rectangle obstacle: obstacles) {
 			batch.draw(dropImage, obstacle.x, obstacle.y);
 		}
@@ -187,12 +184,12 @@ public class SomeGame extends ApplicationAdapter {
 		// process user input
 		processInput();
 
-		// make sure the bucket stays within the screen bounds
+		// make sure the player stays within the screen bounds
 
 		collisionCheck();
 
-//		if(bucket.x < 0) bucket.x = 0;
-//		if(bucket.x > 480 - 64) bucket.x = 480 - 64;
+//		if(player.x < 0) player.x = 0;
+//		if(player.x > 480 - 64) player.x = 480 - 64;
 
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
@@ -204,15 +201,18 @@ public class SomeGame extends ApplicationAdapter {
 
 
 		// move the obstacles, remove any that are beneath the bottom edge of
-		// the screen or that hit the bucket. In the later case we play back
+		// the screen or that hit the player. In the later case we play back
 		// a sound effect as well.
+
+		player.y -= 200*Gdx.graphics.getDeltaTime();
+
 		Iterator<Rectangle> iter = obstacles.iterator();
 		Iterator<Rectangle> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
 			raindrop.y -= 200*Gdx.graphics.getDeltaTime();
 			if(raindrop.y + 64 < 0) iter.remove();
-//			if(raindrop.overlaps(bucket)) {
+//			if(raindrop.overlaps(player)) {
 //				dropSound.play();
 //				iter.remove();
 //			}
@@ -263,19 +263,19 @@ public class SomeGame extends ApplicationAdapter {
 	}
 
 	private void moveUp(){
-		bucket.y += 200*Gdx.graphics.getDeltaTime();
+		player.y += 200*Gdx.graphics.getDeltaTime();
 	}
 
 	private void moveDown(){
-		bucket.y -= 200*Gdx.graphics.getDeltaTime();
+		player.y -= 200*Gdx.graphics.getDeltaTime();
 	}
 
 	private void moveRight(){
-		bucket.x += 200*Gdx.graphics.getDeltaTime();
+		player.x += 200*Gdx.graphics.getDeltaTime();
 	}
 
 	private void moveLeft(){
-		bucket.x -= 200*Gdx.graphics.getDeltaTime();
+		player.x -= 200*Gdx.graphics.getDeltaTime();
 	}
 
 	@Override
@@ -283,7 +283,7 @@ public class SomeGame extends ApplicationAdapter {
 		// dispose of all the native resources
 		dropImage.dispose();
 		wallImage.dispose();
-		bucketImage.dispose();
+		playerImage.dispose();
 		joystickImage.dispose();
 //		dropSound.dispose();
 //		rainMusic.dispose();
