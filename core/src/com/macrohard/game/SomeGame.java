@@ -22,15 +22,18 @@ public class SomeGame extends ApplicationAdapter {
 	private Texture wallImage;
 	private Texture playerImage;
 	private Texture joystickImage;
+	private Texture joystickCentreImage;
 	private Sound dropSound;
 	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
 	private Rectangle player;
 	private Rectangle joystick;
+	private Rectangle joystickCentre;
 	private Array<Rectangle> obstacles;
 	private Array<Rectangle> sideWalls;
 	private long lastDropTime;
+	private boolean touchHeld = false;
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
 
@@ -46,6 +49,7 @@ public class SomeGame extends ApplicationAdapter {
 		wallImage = new Texture(Gdx.files.internal("wall1.2.png"));
 		playerImage = new Texture(Gdx.files.internal("bucket.png"));
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
+		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
 
 		// load the drop sound effect and the rain background "music"
 //		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -69,10 +73,16 @@ public class SomeGame extends ApplicationAdapter {
 
 		// create joystick
 		joystick = new Rectangle();
-		joystick.x = 350;
-		joystick.y = 30;
+		joystick.x = 330;
+		joystick.y = 50;
 		joystick.height = 100;
 		joystick.width = 100;
+
+		joystickCentre = new Rectangle();
+		joystickCentre.x = 370;
+		joystickCentre.y = 90;
+		joystickCentre.height = 21;
+		joystickCentre.width = 21;
 
 		// create the obstacles array and spawn the first raindrop
 		obstacles = new Array<Rectangle>();
@@ -179,6 +189,7 @@ public class SomeGame extends ApplicationAdapter {
 			batch.draw(wallImage, side.x, side.y);
 		}
 		batch.draw(joystickImage, joystick.x, joystick.y);
+		batch.draw(joystickCentreImage, joystickCentre.x, joystickCentre.y);
 		batch.end();
 
 		// process user input
@@ -225,36 +236,56 @@ public class SomeGame extends ApplicationAdapter {
 	}
 
 	private void processInput() {
+		float relativex = 0;
+		float relativey = 0;
+		Vector3 touchPos = new Vector3();
 		if (Gdx.input.isTouched()) {
-			Vector3 touchPos = new Vector3();
+			touchPos = new Vector3();
 			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 			camera.unproject(touchPos);
-			// check if touch is within joystick hitbox with buffer
-
-			float relativex = touchPos.x - (joystick.x + joystick.width/2);
-			float relativey = touchPos.y - (joystick.y + joystick.height/2);
-			if (Math.abs(relativex) < joystick.width
-					&& (Math.abs(relativey) < joystick.height)){
-				if (relativex > 0 && relativex > relativey){
-					moveRight();
-					return;
-				}
-
-				if (relativex < 0 && relativex < relativey){
-					moveLeft();
-					return;
-				}
-
-				if (relativey > 0 && relativey > relativex){
-					moveUp();
-					return;
-				}
-
-				if (relativey < 0 && relativey < relativex){
-					moveDown();
-					return;
-				}
+			relativex = touchPos.x - (joystick.x + joystick.width/2);
+			relativey = touchPos.y - (joystick.y + joystick.height/2);
+			if (!touchHeld) {
+				touchHeld = Math.pow(relativex * relativex + relativey * relativey, 0.5) < joystick.width / 2;
 			}
+		} else {
+			touchHeld = false;
+		}
+
+		if (touchHeld) {
+			// check if touch is within joystick hitbox with buffer
+			if (Math.abs(relativex) < joystick.width/2
+					&& (Math.abs(relativey) < joystick.height/2)) {
+				joystickCentre.x = touchPos.x - joystickCentre.width/2;
+				joystickCentre.y = touchPos.y - joystickCentre.height/2;
+			} else {
+				float angle = (float) Math.atan2(relativey, relativex);
+				joystickCentre.x = (float) Math.cos(angle) * joystick.width/2 + 380 - joystickCentre.width/2;
+				joystickCentre.y = (float) Math.sin(angle) * joystick.width/2 + 100 - joystickCentre.height/2;
+			}
+
+			if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
+				moveRight();
+				return;
+			}
+
+			if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
+				moveLeft();
+				return;
+			}
+
+			if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
+				moveUp();
+				return;
+			}
+
+			if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
+				moveDown();
+				return;
+			}
+		}else{
+			joystickCentre.x = 370;
+			joystickCentre.y = 90;
 		}
 	}
 
@@ -285,6 +316,7 @@ public class SomeGame extends ApplicationAdapter {
 		wallImage.dispose();
 		playerImage.dispose();
 		joystickImage.dispose();
+		joystickCentreImage.dispose();
 //		dropSound.dispose();
 //		rainMusic.dispose();
 		batch.dispose();
