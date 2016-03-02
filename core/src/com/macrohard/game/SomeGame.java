@@ -194,6 +194,7 @@ public class SomeGame extends ApplicationAdapter {
 
 		// process user input
 		processInput();
+//		processInputTilt();
 
 		// make sure the player stays within the screen bounds
 
@@ -233,6 +234,19 @@ public class SomeGame extends ApplicationAdapter {
 			side.y -= 100*Gdx.graphics.getDeltaTime();
 			if(side.y + 64 < 0) iter2.remove();
 		}
+	}
+
+	private void processInputTilt(){
+		float x = Gdx.input.getRoll();
+		float y = Gdx.input.getPitch();
+		float incx = x * Math.abs(x);
+		float incy = y * Math.abs(y);
+		if (incx > 200) incx = 200;
+		if (incx < -200) incx = -200;
+		if (incy > 200) incy = 200;
+		if (incy < -200) incy = -200;
+		player.x += incx * Gdx.graphics.getDeltaTime();
+		player.y += incy * Gdx.graphics.getDeltaTime();
 	}
 
 	private void processInput() {
