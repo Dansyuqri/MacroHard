@@ -1,6 +1,7 @@
 package com.macrohard.game;
 
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -27,13 +28,19 @@ public class SomeGame extends ApplicationAdapter {
 	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
-	private Rectangle player;
+	private Player player;
 	private Rectangle joystick;
 	private Rectangle joystickCentre;
-	private Array<Rectangle> obstacles;
+	private Array<Obstacle> obstacles;
 	private Array<Rectangle> sideWalls;
+	ArrayList<Barrier> barriers;
+	ArrayList<Switch> switches;
 	private long lastDropTime;
 	private boolean touchHeld = false;
+	private int gameSpeed = 100;		// speed at which the obstacles are moving downwards.
+	private int speedIncrement;	// increment by which gameSpeed increases when in dangerZone
+	private long startDangerTime=0;
+	private long endDangerTime;
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
 
@@ -64,12 +71,12 @@ public class SomeGame extends ApplicationAdapter {
 		camera.setToOrtho(false, 480, 800);
 		batch = new SpriteBatch();
 
-		// create a Rectangle to logically represent the player
-		player = new Rectangle();
-		player.x = 480 / 2 - 64 / 2; // center the player horizontally
-		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
-		player.width = 64;
-		player.height = 64;
+		// create a Player to logically represent the player
+		player = new Player(480 / 2 - 64 / 2,400,64,64);
+//		player.x = 480 / 2 - 64 / 2; // center the player horizontally
+//		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
+//		player.width = 64;
+//		player.height = 64;
 
 		// create joystick
 		joystick = new Rectangle();
@@ -85,7 +92,7 @@ public class SomeGame extends ApplicationAdapter {
 		joystickCentre.width = 21;
 
 		// create the obstacles array and spawn the first raindrop
-		obstacles = new Array<Rectangle>();
+		obstacles = new Array<Obstacle>();
 		sideWalls = new Array<Rectangle>();
 		boolean[] temp = {true, true, true, true, true, true, true};
 		wallCoord(temp);
@@ -139,17 +146,17 @@ public class SomeGame extends ApplicationAdapter {
 	private void spawnObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
-				Rectangle obstacle = new Rectangle();
+				Obstacle obstacle = new Obstacle();
 			obstacle.x = (64 * i) + 16;
 			obstacle.y = 800;
 			obstacle.width = 64;
 			obstacle.height = 64;
 			obstacles.add(obstacle);
+			}
+			current[i] = false;
 		}
-		current[i] = false;
+		lastDropTime = TimeUtils.nanoTime();
 	}
-	lastDropTime = TimeUtils.nanoTime();
-}
 
 	private void spawnSides(){
 		for (int i = 0; i < 2; i++) {
@@ -195,10 +202,8 @@ public class SomeGame extends ApplicationAdapter {
 		// process user input
 		processInput();
 //		processInputTilt();
-
+		removeBarriers();
 		// make sure the player stays within the screen bounds
-
-		collisionCheck();
 
 //		if(player.x < 0) player.x = 0;
 //		if(player.x > 480 - 64) player.x = 480 - 64;
@@ -218,7 +223,7 @@ public class SomeGame extends ApplicationAdapter {
 
 		player.y -= 100*Gdx.graphics.getDeltaTime();
 
-		Iterator<Rectangle> iter = obstacles.iterator();
+		Iterator<Obstacle> iter = obstacles.iterator();
 		Iterator<Rectangle> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
@@ -282,58 +287,129 @@ public class SomeGame extends ApplicationAdapter {
 			// implemented two alternate kinds of movement:
 			omniMove(cos, sin);
 //			orthoMove(relativex, relativey);
-		}else{
+		} else {
 			joystickCentre.x = 370;
 			joystickCentre.y = 90;
 		}
-	}
-
-	private void collisionCheck(){
-		//TODO: Check for collisions and handle them (Minh)
 	}
 
 	private void omniMove(float x, float y){
 		player.x += x * 200 * Gdx.graphics.getDeltaTime();
 		player.y += y * 200 * Gdx.graphics.getDeltaTime();
 	}
+//	TODO: @iamhans No more ortho move right?
+//	private void orthoMove(float relativex, float relativey){
+//		if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
+//			moveRight();
+//			return;
+//		}
+//
+//		if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
+//			moveLeft();
+//			return;
+//		}
+//
+//		if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
+//			moveUp();
+//			return;
+//		}
+//
+//		if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
+//			moveDown();
+//			return;
+//		}
+//	}
 
-	private void orthoMove(float relativex, float relativey){
-		if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveRight();
-			return;
+	private boolean canMove(Player player1, String direction){
+		boolean res = true;
+		int tempY, tempX;
+		if (direction.equals("up")) {
+			tempY = (int) (player1.y + 200*Gdx.graphics.getDeltaTime());
+			tempX = (int) player1.x;
+		} else if (direction.equals("down")) {
+			tempY = (int) (player1.y - 200*Gdx.graphics.getDeltaTime());
+			tempX = (int) player1.x;
+		} else if (direction.equals("right")) {
+			tempY = (int) player1.y;
+			tempX = (int) (player1.x + 200*Gdx.graphics.getDeltaTime());
+		} else {
+			tempY = (int) player1.y;
+			tempX = (int) (player1.x - 200*Gdx.graphics.getDeltaTime());
 		}
-
-		if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveLeft();
-			return;
+		Player tempPlayer = new Player(tempX, tempY, (int) player1.width, (int) player1.height);
+		for (Obstacle obstacle:obstacles) {
+			if (tempPlayer.overlaps(obstacle)){
+				res = false;
+				break;
+			}
 		}
-
-		if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveUp();
-			return;
+		for (Barrier barrier:barriers) {
+			if (tempPlayer.overlaps(barrier)){
+				res = false;
+				break;
+			}
 		}
+		for (Switch eachSwitch:switches) {
+			if (tempPlayer.overlaps(eachSwitch)){
+				// send something to inform other devices to remove all barriers
+				switches.remove(eachSwitch);
+			}
+		}
+		return res;
+	}
 
-		if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveDown();
-			return;
+	private void notifyDangerZone() {
+		if (player.y<1) { // TODO: put a non arbitrary number to represent the dangerZone line
+			endDangerTime = System.currentTimeMillis() + 5000; // time that dangerZone effect lasts
+				// send information to the other devices
 		}
 	}
 
-	private void moveUp(){
-		player.y += 200*Gdx.graphics.getDeltaTime();
+	private void receiveDangerZone() {
+//		if currentTimeMillis <= a non zero endDangerTime from other devices
+		gameSpeed += speedIncrement;
 	}
 
-	private void moveDown(){
-		player.y -= 200*Gdx.graphics.getDeltaTime();
+	private void removeBarriers() {
+//		constantly check if receive something from server
+		barriers.clear();
 	}
 
-	private void moveRight(){
-		player.x += 200*Gdx.graphics.getDeltaTime();
+	private void moveUp(Player player1){
+		if (canMove(player1,"up")) player1.y += 200*Gdx.graphics.getDeltaTime();
 	}
 
-	private void moveLeft(){
-		player.x -= 200*Gdx.graphics.getDeltaTime();
+	private void moveDown(Player player1){
+		if (canMove(player1,"down")) player1.y -= 200*Gdx.graphics.getDeltaTime();
 	}
+
+	private void moveRight(Player player1){
+		if (canMove(player1,"right")) player1.x += 200*Gdx.graphics.getDeltaTime();
+	}
+
+	private void moveLeft(Player player1){
+		if (canMove(player1,"left")) player1.x -= 200*Gdx.graphics.getDeltaTime();
+	}
+
+//	Don't see the point of having the other 3 methods
+	private void moveDown(Obstacle obstacle){
+		float tempY = obstacle.y - gameSpeed*Gdx.graphics.getDeltaTime();
+		obstacle.y = tempY;
+		if (obstacle.overlaps(player)) {
+			moveDown(player);
+		}
+	}
+//	private void moveUp(Obstacle obstacle){
+//		obstacle.y += 200*Gdx.graphics.getDeltaTime();
+//	}
+//
+//	private void moveRight(Obstacle obstacle){
+//		obstacle.x += 200*Gdx.graphics.getDeltaTime();
+//	}
+//
+//	private void moveLeft(Obstacle obstacle){
+//		obstacle.x -= 200*Gdx.graphics.getDeltaTime();
+//	}
 
 	@Override
 	public void dispose() {
@@ -347,4 +423,28 @@ public class SomeGame extends ApplicationAdapter {
 //		rainMusic.dispose();
 		batch.dispose();
 	}
+}
+
+// Switch sub-class
+
+class Obstacle extends Rectangle {
+
+}
+
+class Switch extends Obstacle {
+
+}
+
+
+class Player extends Rectangle {
+	public Player(){
+		super();
+	}
+	public Player(int x, int y, int width, int height) {
+		super(x, y, width, height);
+	}
+}
+
+class Barrier extends Obstacle {
+
 }
