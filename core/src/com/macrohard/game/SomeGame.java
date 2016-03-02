@@ -254,35 +254,20 @@ public class SomeGame extends ApplicationAdapter {
 
 		if (touchHeld) {
 			// check if touch is within joystick hitbox with buffer
+			float angle = (float) Math.atan2(relativey, relativex);
+			float cos = (float) Math.cos(angle);
+			float sin = (float) Math.sin(angle);
 			if (Math.abs(relativex) < joystick.width/2
 					&& (Math.abs(relativey) < joystick.height/2)) {
 				joystickCentre.x = touchPos.x - joystickCentre.width/2;
 				joystickCentre.y = touchPos.y - joystickCentre.height/2;
 			} else {
-				float angle = (float) Math.atan2(relativey, relativex);
-				joystickCentre.x = (float) Math.cos(angle) * joystick.width/2 + 380 - joystickCentre.width/2;
-				joystickCentre.y = (float) Math.sin(angle) * joystick.width/2 + 100 - joystickCentre.height/2;
+				joystickCentre.x = cos * joystick.width/2 + 380 - joystickCentre.width/2;
+				joystickCentre.y = sin * joystick.width/2 + 100 - joystickCentre.height/2;
 			}
-
-			if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
-				moveRight();
-				return;
-			}
-
-			if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
-				moveLeft();
-				return;
-			}
-
-			if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
-				moveUp();
-				return;
-			}
-
-			if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
-				moveDown();
-				return;
-			}
+			// implemented two alternate kinds of movement:
+			omniMove(cos, sin);
+//			orthoMove(relativex, relativey);
 		}else{
 			joystickCentre.x = 370;
 			joystickCentre.y = 90;
@@ -291,6 +276,33 @@ public class SomeGame extends ApplicationAdapter {
 
 	private void collisionCheck(){
 		//TODO: Check for collisions and handle them (Minh)
+	}
+
+	private void omniMove(float x, float y){
+		player.x += x * 200 * Gdx.graphics.getDeltaTime();
+		player.y += y * 200 * Gdx.graphics.getDeltaTime();
+	}
+
+	private void orthoMove(float relativex, float relativey){
+		if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
+			moveRight();
+			return;
+		}
+
+		if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
+			moveLeft();
+			return;
+		}
+
+		if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
+			moveUp();
+			return;
+		}
+
+		if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
+			moveDown();
+			return;
+		}
 	}
 
 	private void moveUp(){
