@@ -146,16 +146,30 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
 				Obstacle obstacle = new Obstacle();
-			obstacle.x = (64 * i) + 16;
-			obstacle.y = 800;
-			obstacle.width = 64;
-			obstacle.height = 64;
-			obstacles.add(obstacle);
+				obstacle.x = (64 * i) + 16;
+				obstacle.y = 800;
+				obstacle.width = 64;
+				obstacle.height = 64;
+				obstacles.add(obstacle);
+			}
+			current[i] = false;
 		}
-		current[i] = false;
+		lastDropTime = TimeUtils.nanoTime();
 	}
-	lastDropTime = TimeUtils.nanoTime();
-}
+	private void spawnPower(boolean[] map) {
+		for (int i = 0; i < map.length; i++) {
+			if (!map[i]) {
+				Power power = new Power(TYPES_OF_POWER[(int)(Math.random()*TYPES_OF_POWER.length)]);
+				power.x = (64 * i) + 16;
+				power.y = 800;
+				power.width = 64;
+				power.height = 64;
+				powers.add(power);
+			}
+			current[i] = false;
+		}
+		lastDropTime = TimeUtils.nanoTime();
+	}
 
 	private void spawnSides(){
 		for (int i = 0; i < 2; i++) {
