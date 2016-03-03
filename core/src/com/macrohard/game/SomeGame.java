@@ -1,6 +1,7 @@
 package com.macrohard.game;
 
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -18,22 +19,26 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class SomeGame extends ApplicationAdapter {
-	private Texture dropImage;
-	private Texture wallImage;
-	private Texture playerImage;
+	//TODO: spawn a powerUp using this array
+	private final String[] TYPES_OF_POWER_UP = {"slowDown","fewerObstacles"};
 	private Texture joystickImage;
 	private Texture joystickCentreImage;
 	private Sound dropSound;
 	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
-	private Rectangle player;
+	private Player player;
 	private Rectangle joystick;
 	private Rectangle joystickCentre;
-	private Array<Rectangle> obstacles;
-	private Array<Rectangle> sideWalls;
+	private ArrayList<Obstacle> obstacles;
+	private ArrayList<SideWall> sideWalls;
+	private ArrayList<Switch> switches;
+	private ArrayList<Barrier> barriers;
+	private ArrayList<PowerUp> powerUps;
 	private long lastDropTime;
 	private boolean touchHeld = false;
+	private int speed;
+	private int speedIncrement;
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
 
@@ -45,9 +50,6 @@ public class SomeGame extends ApplicationAdapter {
 		//TODO: For later development also separate certain methods into different threads, e.g. maybe rendering and spawning obstacles can have individual threads (Syuqri)
 
 		// load the images for the droplet and the player, 64x64 pixels each
-		dropImage = new Texture(Gdx.files.internal("wall1.1.png"));
-		wallImage = new Texture(Gdx.files.internal("wall1.2.png"));
-		playerImage = new Texture(Gdx.files.internal("bucket.png"));
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
 
@@ -65,7 +67,7 @@ public class SomeGame extends ApplicationAdapter {
 		batch = new SpriteBatch();
 
 		// create a Rectangle to logically represent the player
-		player = new Rectangle();
+		player = new Player();
 		player.x = 480 / 2 - 64 / 2; // center the player horizontally
 		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
 		player.width = 60;
@@ -81,8 +83,11 @@ public class SomeGame extends ApplicationAdapter {
 		joystickCentre.width = 21;
 
 		// create the obstacles array and spawn the first raindrop
-		obstacles = new Array<Rectangle>();
-		sideWalls = new Array<Rectangle>();
+		obstacles = new ArrayList<Obstacle>();
+		sideWalls = new ArrayList<SideWall>();
+		barriers = new ArrayList<Barrier>();
+		switches = new ArrayList<Switch>();
+		powerUps = new ArrayList<PowerUp>();
 		boolean[] temp = {true, true, true, true, true, true, true};
 		wallCoord(temp);
 		spawnObstacle(current);
@@ -132,10 +137,12 @@ public class SomeGame extends ApplicationAdapter {
 		path = pathin;
 	}
 
+	//TODO: spawn powerUps, Barriers + Switch (need check condition tgt), etc.
+
 	private void spawnObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
-				Rectangle obstacle = new Rectangle();
+				Obstacle obstacle = new Obstacle();
 			obstacle.x = (64 * i) + 16;
 			obstacle.y = 800;
 			obstacle.width = 64;
@@ -149,7 +156,7 @@ public class SomeGame extends ApplicationAdapter {
 
 	private void spawnSides(){
 		for (int i = 0; i < 2; i++) {
-			Rectangle sideWall = new Rectangle();
+			SideWall sideWall = new SideWall();
 			sideWall.x = (464*i);
 			sideWall.y = 800;
 			sideWall.width = 16;
@@ -177,13 +184,24 @@ public class SomeGame extends ApplicationAdapter {
 		// begin a new batch and draw the player and
 		// all drops
 		batch.begin();
-		batch.draw(playerImage, player.x, player.y);
-		for(Rectangle obstacle: obstacles) {
-			batch.draw(dropImage, obstacle.x, obstacle.y);
+		batch.draw(player.getImage(), player.x, player.y);
+		// TODO: set specific coordinates for powerUp, Barrier, switches, etc.
+		for(Obstacle obstacle: obstacles) {
+			batch.draw(obstacle.getImage(), obstacle.x, obstacle.y);
 		}
-		for(Rectangle side: sideWalls){
-			batch.draw(wallImage, side.x, side.y);
+		for(SideWall sideWall: sideWalls){
+			batch.draw(sideWall.getImage(), sideWall.x, sideWall.y);
 		}
+		for (PowerUp powerUp:powerUps){
+			batch.draw(powerUp.getImage(), powerUp.x, powerUp.y);
+		}
+		for(Switch eachSwitch: switches) {
+			batch.draw(eachSwitch.getImage(), eachSwitch.x, eachSwitch.y);
+		}
+		for(Barrier barrier: barriers){
+			batch.draw(barrier.getImage(), barrier.x, barrier.y);
+		}
+
 		if (touchHeld) {
 			batch.draw(joystickImage, joystick.x, joystick.y);
 			batch.draw(joystickCentreImage, joystickCentre.x, joystickCentre.y);
@@ -194,7 +212,9 @@ public class SomeGame extends ApplicationAdapter {
 
 		processInput();
 //		processInputTilt();
-
+		if (barriers.size() != 0) {
+			removeBarriers();
+		}
 
 
 		// check if we need to create a new raindrop
@@ -212,11 +232,11 @@ public class SomeGame extends ApplicationAdapter {
 
 		player.y -= 100*Gdx.graphics.getDeltaTime();
 
-		Iterator<Rectangle> iter = obstacles.iterator();
-		Iterator<Rectangle> iter2 = sideWalls.iterator();
+		Iterator<Obstacle> iter = obstacles.iterator();
+		Iterator<SideWall> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
-			raindrop.y -= 100*Gdx.graphics.getDeltaTime();
+			raindrop.y -= speed*Gdx.graphics.getDeltaTime();
 			if(raindrop.y + 64 < 0) iter.remove();
 //			if(raindrop.overlaps(player)) {
 //				dropSound.play();
@@ -225,7 +245,7 @@ public class SomeGame extends ApplicationAdapter {
 		}
 		while(iter2.hasNext()) {
 			Rectangle side = iter2.next();
-			side.y -= 100*Gdx.graphics.getDeltaTime();
+			side.y -= speed*Gdx.graphics.getDeltaTime();
 			if(side.y + 64 < 0) iter2.remove();
 		}
 	}
@@ -282,6 +302,11 @@ public class SomeGame extends ApplicationAdapter {
 		}
 	}
 
+	private void removeBarriers(){
+//		TODO: if receive something from server (Ryan)
+		barriers.clear();
+	}
+
 	private boolean collisionCheck(){
 		if (player.x > 464 - player.width ){
 			player.x = 464 - player.width;
@@ -289,13 +314,35 @@ public class SomeGame extends ApplicationAdapter {
 		if (player.x < 16){
 			player.x = 16;
 		}
-		for (Rectangle obstacle: obstacles) {
+//		collide with normal wall obstacle
+		for (Obstacle obstacle: obstacles) {
 			if (player.overlaps(obstacle)){
 				return true;
 			}
 		}
+//		collide with barriers
+		for (Barrier barrier: barriers) {
+			if (player.overlaps(barrier)){
+				return true;
+			}
+		}
+//		collide with switch
+		for (Switch eachSwitch:switches){
+			if (player.overlaps(eachSwitch)){
+				// change this to another different switch image
+				eachSwitch.setImage(new Texture(Gdx.files.internal("joystick_centre.png")));
+				// then notify server
+			}
+		}
+//		collide with power up
+		for (PowerUp powerUp:powerUps){
+			if (player.overlaps(powerUp)){
+				player.addPower(powerUp.getType());
+				powerUps.remove(powerUp);
+				// then notify server
+			}
+		}
 		return false;
-		//TODO: Check for collisions and handle them (Minh)
 	}
 
 	private void omniMove(float x, float y){
@@ -352,13 +399,96 @@ public class SomeGame extends ApplicationAdapter {
 	@Override
 	public void dispose() {
 		// dispose of all the native resources
-		dropImage.dispose();
-		wallImage.dispose();
-		playerImage.dispose();
+		for (Obstacle obstacle:obstacles) {
+			obstacle.getImage().dispose();
+		}
+		for (PowerUp powerUp:powerUps) {
+			powerUp.getImage().dispose();
+		}
+		for (Barrier barrier:barriers) {
+			barrier.getImage().dispose();
+		}
+		for (Switch eachSwitch:switches) {
+			eachSwitch.getImage().dispose();
+		}
+		for (SideWall sideWall:sideWalls) {
+			sideWall.getImage().dispose();
+		}
+		player.getImage().dispose();
 		joystickImage.dispose();
 		joystickCentreImage.dispose();
 //		dropSound.dispose();
 //		rainMusic.dispose();
 		batch.dispose();
+	}
+}
+
+class GameObject extends Rectangle {
+	private Texture image;
+
+	public Texture getImage() {
+		return image;
+	}
+	public void setImage(Texture image) {
+		this.image = image;
+	}
+}
+
+class SideWall extends GameObject {
+	public SideWall(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("sideWall.png")));
+	}
+}
+
+class PowerUp extends GameObject {
+	private String type;
+	public PowerUp(String type){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
+		this.type = type;
+	}
+
+	public String getType() {
+		return type;
+	}
+}
+
+class Obstacle extends GameObject {
+	public Obstacle(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("obstacle.png")));
+	}
+}
+
+class Switch extends Obstacle {
+	public Switch(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
+	}
+}
+
+class Barrier extends Obstacle {
+	public Barrier(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
+	}
+}
+
+class Player extends GameObject {
+	private ArrayList<String> powers;
+	public Player(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
+	}
+
+	public void addPower(String power) {
+		powers.add(power);
+	}
+	public void usePower(String power) {
+		//notify server
+	}
+	public ArrayList<String> getPowers() {
+		return powers;
 	}
 }
