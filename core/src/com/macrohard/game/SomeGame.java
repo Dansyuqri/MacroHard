@@ -15,12 +15,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class SomeGame extends ApplicationAdapter {
-	//TODO: spawn a powerUp using this array (Minh)
-	private final String[] TYPES_OF_POWER_UP = {"slowDown","fewerObstacles"};
+	//TODO: spawn a powerUp/Down using these arrays (Minh)
+	private final String[] TYPES_OF_POWER_UP = {"slowGameDown","fewerObstacles"};
+	private final String[] TYPES_OF_POWER_DOWN = {"speedPlayerUp","dangerZoneHigher"};
 	private Texture joystickImage;
 	private Texture joystickCentreImage;
 	private Sound dropSound;
@@ -37,8 +37,9 @@ public class SomeGame extends ApplicationAdapter {
 	private ArrayList<PowerUp> powerUps;
 	private long lastDropTime;
 	private boolean touchHeld = false;
-	private int speed;
+	private int gameSpeed;
 	private int speedIncrement;
+	private int playerSpeed;
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
 
@@ -52,7 +53,8 @@ public class SomeGame extends ApplicationAdapter {
 		// load the images for the droplet and the player, 64x64 pixels each
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
-
+		gameSpeed = 100;
+		playerSpeed = 200;
 		// load the drop sound effect and the rain background "music"
 //		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
 //		rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
@@ -138,6 +140,7 @@ public class SomeGame extends ApplicationAdapter {
 	}
 
 	//TODO: spawn powerUps, Barriers + Switch (need check condition tgt), etc. (Minh)
+	//TODO: make game speed increases method (Minh)
 
 	private void spawnObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
@@ -235,7 +238,7 @@ public class SomeGame extends ApplicationAdapter {
 		Iterator<SideWall> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
-			raindrop.y -= speed*Gdx.graphics.getDeltaTime();
+			raindrop.y -= gameSpeed*Gdx.graphics.getDeltaTime();
 			if(raindrop.y + 64 < 0) iter.remove();
 //			if(raindrop.overlaps(player)) {
 //				dropSound.play();
@@ -244,7 +247,7 @@ public class SomeGame extends ApplicationAdapter {
 		}
 		while(iter2.hasNext()) {
 			Rectangle side = iter2.next();
-			side.y -= speed*Gdx.graphics.getDeltaTime();
+			side.y -= gameSpeed*Gdx.graphics.getDeltaTime();
 			if(side.y + 64 < 0) iter2.remove();
 		}
 	}
@@ -254,10 +257,10 @@ public class SomeGame extends ApplicationAdapter {
 		float y = Gdx.input.getPitch();
 		float incx = x * Math.abs(x);
 		float incy = y * Math.abs(y);
-		if (incx > 200) incx = 200;
-		if (incx < -200) incx = -200;
-		if (incy > 200) incy = 200;
-		if (incy < -200) incy = -200;
+		if (incx > playerSpeed) incx = playerSpeed;
+		if (incx < -playerSpeed) incx = -playerSpeed;
+		if (incy > playerSpeed) incy = playerSpeed;
+		if (incy < -playerSpeed) incy = -playerSpeed;
 		player.x += incx * Gdx.graphics.getDeltaTime();
 		player.y += incy * Gdx.graphics.getDeltaTime();
 	}
@@ -347,11 +350,11 @@ public class SomeGame extends ApplicationAdapter {
 	private void omniMove(float x, float y){
 		float prevx = player.x;
 		float prevy = player.y;
-		player.x += x * 200 * Gdx.graphics.getDeltaTime();
+		player.x += x * playerSpeed * Gdx.graphics.getDeltaTime();
 		if (collisionCheck()){
 			player.x = prevx;
 		}
-		player.y += y * 200 * Gdx.graphics.getDeltaTime();
+		player.y += y * playerSpeed * Gdx.graphics.getDeltaTime();
 		if (collisionCheck()){
 			player.y = prevy;
 		}
@@ -380,19 +383,19 @@ public class SomeGame extends ApplicationAdapter {
 	}
 
 	private void moveUp(){
-		player.y += 200*Gdx.graphics.getDeltaTime();
+		player.y += playerSpeed*Gdx.graphics.getDeltaTime();
 	}
 
 	private void moveDown(){
-		player.y -= 200*Gdx.graphics.getDeltaTime();
+		player.y -= playerSpeed*Gdx.graphics.getDeltaTime();
 	}
 
 	private void moveRight(){
-		player.x += 200*Gdx.graphics.getDeltaTime();
+		player.x += playerSpeed*Gdx.graphics.getDeltaTime();
 	}
 
 	private void moveLeft(){
-		player.x -= 200*Gdx.graphics.getDeltaTime();
+		player.x -= playerSpeed*Gdx.graphics.getDeltaTime();
 	}
 
 	@Override
