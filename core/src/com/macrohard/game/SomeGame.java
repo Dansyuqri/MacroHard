@@ -19,7 +19,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class SomeGame extends ApplicationAdapter {
-	//TODO: spawn a powerUp using this array
+	//TODO: spawn a powerUp using this array (Minh)
 	private final String[] TYPES_OF_POWER_UP = {"slowDown","fewerObstacles"};
 	private Texture joystickImage;
 	private Texture joystickCentreImage;
@@ -137,7 +137,7 @@ public class SomeGame extends ApplicationAdapter {
 		path = pathin;
 	}
 
-	//TODO: spawn powerUps, Barriers + Switch (need check condition tgt), etc.
+	//TODO: spawn powerUps, Barriers + Switch (need check condition tgt), etc. (Minh)
 
 	private void spawnObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
@@ -185,7 +185,6 @@ public class SomeGame extends ApplicationAdapter {
 		// all drops
 		batch.begin();
 		batch.draw(player.getImage(), player.x, player.y);
-		// TODO: set specific coordinates for powerUp, Barrier, switches, etc.
 		for(Obstacle obstacle: obstacles) {
 			batch.draw(obstacle.getImage(), obstacle.x, obstacle.y);
 		}
