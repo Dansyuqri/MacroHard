@@ -18,9 +18,8 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class SomeGame extends ApplicationAdapter {
-	//TODO: spawn a powerUp/Down using these arrays (Minh)
-	private final String[] TYPES_OF_POWER_UP = {"slowGameDown","fewerObstacles"};
-	private final String[] TYPES_OF_POWER_DOWN = {"speedPlayerUp","dangerZoneHigher"};
+	//TODO: spawn a power using these arrays (Minh)
+	private final String[] TYPES_OF_POWER = {"slowGameDown","fewerObstacles","speedPlayerUp","dangerZoneHigher"};
 	private Texture joystickImage;
 	private Texture joystickCentreImage;
 	private Sound dropSound;
@@ -34,12 +33,10 @@ public class SomeGame extends ApplicationAdapter {
 	private ArrayList<SideWall> sideWalls;
 	private ArrayList<Switch> switches;
 	private ArrayList<Barrier> barriers;
-	private ArrayList<PowerUp> powerUps;
-	private long lastDropTime;
+	private ArrayList<Power> powers;
+	private long lastDropTime, endPowerTime;
 	private boolean touchHeld = false;
-	private int gameSpeed;
-	private int speedIncrement;
-	private int playerSpeed;
+	private int gameSpeed, speedIncrement, playerSpeed, dangerZone;
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false};
 
@@ -54,7 +51,10 @@ public class SomeGame extends ApplicationAdapter {
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
 		gameSpeed = 100;
+		speedIncrement = 100;
 		playerSpeed = 200;
+		dangerZone = 400;
+		endPowerTime = System.currentTimeMillis();
 		// load the drop sound effect and the rain background "music"
 //		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
 //		rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
@@ -89,7 +89,7 @@ public class SomeGame extends ApplicationAdapter {
 		sideWalls = new ArrayList<SideWall>();
 		barriers = new ArrayList<Barrier>();
 		switches = new ArrayList<Switch>();
-		powerUps = new ArrayList<PowerUp>();
+		powers = new ArrayList<Power>();
 		boolean[] temp = {true, true, true, true, true, true, true};
 		wallCoord(temp);
 		spawnObstacle(current);
@@ -139,7 +139,7 @@ public class SomeGame extends ApplicationAdapter {
 		path = pathin;
 	}
 
-	//TODO: spawn powerUps, Barriers + Switch (need check condition tgt), etc. (Minh)
+	//TODO: spawn powers, Barriers + Switch (need check condition tgt), etc. (Minh)
 	//TODO: make game speed increases method (Minh)
 
 	private void spawnObstacle(boolean[] map) {
@@ -194,8 +194,8 @@ public class SomeGame extends ApplicationAdapter {
 		for(SideWall sideWall: sideWalls){
 			batch.draw(sideWall.getImage(), sideWall.x, sideWall.y);
 		}
-		for (PowerUp powerUp:powerUps){
-			batch.draw(powerUp.getImage(), powerUp.x, powerUp.y);
+		for (Power power:powers){
+			batch.draw(power.getImage(), power.x, power.y);
 		}
 		for(Switch eachSwitch: switches) {
 			batch.draw(eachSwitch.getImage(), eachSwitch.x, eachSwitch.y);
@@ -217,7 +217,10 @@ public class SomeGame extends ApplicationAdapter {
 		if (barriers.size() != 0) {
 			removeBarriers();
 		}
-
+//		constantly check if any power/DangerZone's effect still lingers
+		effectPower();
+		notifyDangerZone();
+		effectDangerZone();
 
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
@@ -303,9 +306,41 @@ public class SomeGame extends ApplicationAdapter {
 			omniMove(cos, sin);
 		}
 	}
+	boolean setPowerLock = true;
+	private void effectPower(){
+		if (System.currentTimeMillis() > endPowerTime) {
+			setPowerLock = true;
+		}
+		if (System.currentTimeMillis() <= endPowerTime){
+			if (setPowerLock) {
+				endPowerTime = System.currentTimeMillis() + 5000;
+				setPowerLock = false;
+			}
+			if (player.getPower().equals("slowGameDown")) {
+				gameSpeed -= speedIncrement;
+			} else if (player.getPower().equals("fewerObstacles")) {
+
+			} else if (player.getPower().equals("speedPlayerUp")) {
+				playerSpeed += speedIncrement;
+			} else if (player.getPower().equals("dangerZoneHigher")) {
+				dangerZone += 50;
+			}
+		}
+	}
+
+	private void notifyDangerZone(){
+		if (player.y < dangerZone) {
+			//notify server
+		}
+	}
+
+	private void effectDangerZone(){
+		// if notified by server
+		gameSpeed += speedIncrement;
+	}
 
 	private void removeBarriers(){
-//		TODO: if receive something from server (Ryan)
+//		TODO: if notified by server (Ryan)
 		barriers.clear();
 	}
 
@@ -337,10 +372,10 @@ public class SomeGame extends ApplicationAdapter {
 			}
 		}
 //		collide with power up
-		for (PowerUp powerUp:powerUps){
-			if (player.overlaps(powerUp)){
-				player.addPower(powerUp.getType());
-				powerUps.remove(powerUp);
+		for (Power power:powers){
+			if (player.overlaps(power)){
+				player.setPower(power.getType());
+				powers.remove(power);
 				// then notify server
 			}
 		}
@@ -404,8 +439,8 @@ public class SomeGame extends ApplicationAdapter {
 		for (Obstacle obstacle:obstacles) {
 			obstacle.getImage().dispose();
 		}
-		for (PowerUp powerUp:powerUps) {
-			powerUp.getImage().dispose();
+		for (Power power:powers) {
+			power.getImage().dispose();
 		}
 		for (Barrier barrier:barriers) {
 			barrier.getImage().dispose();
@@ -443,9 +478,9 @@ class SideWall extends GameObject {
 	}
 }
 
-class PowerUp extends GameObject {
+class Power extends GameObject {
 	private String type;
-	public PowerUp(String type){
+	public Power(String type){
 		super();
 		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
 		this.type = type;
@@ -478,19 +513,17 @@ class Barrier extends Obstacle {
 }
 
 class Player extends GameObject {
-	private ArrayList<String> powers;
+	private String power;
 	public Player(){
 		super();
 		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
 	}
 
-	public void addPower(String power) {
-		powers.add(power);
+	public void setPower(String power) {
+		this.power = power;
 	}
-	public void usePower(String power) {
-		//notify server
-	}
-	public ArrayList<String> getPowers() {
-		return powers;
+
+	public String getPower() {
+		return power;
 	}
 }
