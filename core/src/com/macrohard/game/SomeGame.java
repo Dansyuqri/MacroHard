@@ -68,19 +68,15 @@ public class SomeGame extends ApplicationAdapter {
 		player = new Rectangle();
 		player.x = 480 / 2 - 64 / 2; // center the player horizontally
 		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
-		player.width = 64;
-		player.height = 64;
+		player.width = 60;
+		player.height = 60;
 
 		// create joystick
 		joystick = new Rectangle();
-		joystick.x = 330;
-		joystick.y = 50;
 		joystick.height = 100;
 		joystick.width = 100;
 
 		joystickCentre = new Rectangle();
-		joystickCentre.x = 370;
-		joystickCentre.y = 90;
 		joystickCentre.height = 21;
 		joystickCentre.width = 21;
 
@@ -188,20 +184,18 @@ public class SomeGame extends ApplicationAdapter {
 		for(Rectangle side: sideWalls){
 			batch.draw(wallImage, side.x, side.y);
 		}
-		batch.draw(joystickImage, joystick.x, joystick.y);
-		batch.draw(joystickCentreImage, joystickCentre.x, joystickCentre.y);
+		if (touchHeld) {
+			batch.draw(joystickImage, joystick.x, joystick.y);
+			batch.draw(joystickCentreImage, joystickCentre.x, joystickCentre.y);
+		}
 		batch.end();
 
 		// process user input
+
 		processInput();
 //		processInputTilt();
 
-		// make sure the player stays within the screen bounds
 
-		collisionCheck();
-
-//		if(player.x < 0) player.x = 0;
-//		if(player.x > 480 - 64) player.x = 480 - 64;
 
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
@@ -260,7 +254,11 @@ public class SomeGame extends ApplicationAdapter {
 			relativex = touchPos.x - (joystick.x + joystick.width/2);
 			relativey = touchPos.y - (joystick.y + joystick.height/2);
 			if (!touchHeld) {
-				touchHeld = Math.pow(relativex * relativex + relativey * relativey, 0.5) < joystick.width / 2;
+				joystick.x = touchPos.x - joystick.width/2;
+				joystick.y = touchPos.y - joystick.height/2;
+				joystickCentre.x = touchPos.x - joystickCentre.width/2;
+				joystickCentre.y = touchPos.y - joystickCentre.height/2;
+				touchHeld = true;
 			}
 		} else {
 			touchHeld = false;
@@ -276,25 +274,41 @@ public class SomeGame extends ApplicationAdapter {
 				joystickCentre.x = touchPos.x - joystickCentre.width/2;
 				joystickCentre.y = touchPos.y - joystickCentre.height/2;
 			} else {
-				joystickCentre.x = cos * joystick.width/2 + 380 - joystickCentre.width/2;
-				joystickCentre.y = sin * joystick.width/2 + 100 - joystickCentre.height/2;
+				joystickCentre.x = cos * joystick.width/2 + joystick.x + joystick.width/2 - joystickCentre.width/2;
+				joystickCentre.y = sin * joystick.width/2 + joystick.y + joystick.height/2 - joystickCentre.height/2;
 			}
-			// implemented two alternate kinds of movement:
+
 			omniMove(cos, sin);
-//			orthoMove(relativex, relativey);
-		}else{
-			joystickCentre.x = 370;
-			joystickCentre.y = 90;
 		}
 	}
 
-	private void collisionCheck(){
+	private boolean collisionCheck(){
+		if (player.x > 464 - player.width ){
+			player.x = 464 - player.width;
+		}
+		if (player.x < 16){
+			player.x = 16;
+		}
+		for (Rectangle obstacle: obstacles) {
+			if (player.overlaps(obstacle)){
+				return true;
+			}
+		}
+		return false;
 		//TODO: Check for collisions and handle them (Minh)
 	}
 
 	private void omniMove(float x, float y){
+		float prevx = player.x;
+		float prevy = player.y;
 		player.x += x * 200 * Gdx.graphics.getDeltaTime();
+		if (collisionCheck()){
+			player.x = prevx;
+		}
 		player.y += y * 200 * Gdx.graphics.getDeltaTime();
+		if (collisionCheck()){
+			player.y = prevy;
+		}
 	}
 
 	private void orthoMove(float relativex, float relativey){
