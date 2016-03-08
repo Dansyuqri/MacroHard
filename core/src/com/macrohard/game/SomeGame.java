@@ -51,7 +51,7 @@ public class SomeGame extends ApplicationAdapter {
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
 		gameSpeed = 100;
-		speedIncrement = 100;
+		speedIncrement = 10;
 		playerSpeed = 200;
 		dangerZone = 400;
 		endPowerTime = System.currentTimeMillis();
@@ -232,9 +232,9 @@ public class SomeGame extends ApplicationAdapter {
 			removeBarriers();
 		}
 //		constantly check if any power/DangerZone's effect still lingers
-		effectPower();
-		notifyDangerZone();
-		effectDangerZone();
+//		effectPower();
+//		notifyDangerZone();
+//		effectDangerZone();
 
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
@@ -249,14 +249,14 @@ public class SomeGame extends ApplicationAdapter {
 		// the screen or that hit the player. In the later case we play back
 		// a sound effect as well.
 
-		player.y -= 100*Gdx.graphics.getDeltaTime();
+		player.y -= gameSpeed*Gdx.graphics.getDeltaTime();
 
 		Iterator<Obstacle> iter = obstacles.iterator();
 		Iterator<SideWall> iter2 = sideWalls.iterator();
 		while(iter.hasNext()) {
-			Rectangle raindrop = iter.next();
-			raindrop.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(raindrop.y + 64 < 0) iter.remove();
+			Rectangle obstacle = iter.next();
+			obstacle.y -= gameSpeed*Gdx.graphics.getDeltaTime();
+			if(obstacle.y + 64 < 0) iter.remove();
 //			if(raindrop.overlaps(player)) {
 //				dropSound.play();
 //				iter.remove();
@@ -409,44 +409,6 @@ public class SomeGame extends ApplicationAdapter {
 		}
 	}
 
-	private void orthoMove(float relativex, float relativey){
-		if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveRight();
-			return;
-		}
-
-		if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveLeft();
-			return;
-		}
-
-		if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveUp();
-			return;
-		}
-
-		if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveDown();
-			return;
-		}
-	}
-
-	private void moveUp(){
-		player.y += playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveDown(){
-		player.y -= playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveRight(){
-		player.x += playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveLeft(){
-		player.x -= playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
 	@Override
 	public void dispose() {
 		// dispose of all the native resources
@@ -488,7 +450,7 @@ class GameObject extends Rectangle {
 class SideWall extends GameObject {
 	public SideWall(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("sideWall.png")));
+		this.setImage(new Texture(Gdx.files.internal("wall2.2.png")));
 	}
 }
 
@@ -508,7 +470,7 @@ class Power extends GameObject {
 class Obstacle extends GameObject {
 	public Obstacle(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("obstacle.png")));
+		this.setImage(new Texture(Gdx.files.internal("wall2.1.png")));
 	}
 }
 
@@ -530,7 +492,7 @@ class Player extends GameObject {
 	private String power;
 	public Player(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
+		this.setImage(new Texture(Gdx.files.internal("player.png")));
 	}
 
 	public void setPower(String power) {
