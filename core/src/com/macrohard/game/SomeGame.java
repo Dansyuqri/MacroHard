@@ -38,7 +38,7 @@ public class SomeGame extends ApplicationAdapter {
 	private boolean touchHeld = false;
 	private int gameSpeed, speedIncrement, playerSpeed, dangerZone;
 	boolean[] path;
-	boolean[] current = {false, false, false, false, false, false, false, false, false, false, false};
+	boolean[] current = {false, false, false, false, false, false, false, false, false};
 
 	@Override
 	public void create() {
@@ -52,7 +52,7 @@ public class SomeGame extends ApplicationAdapter {
 		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
 		gameSpeed = 100;
 		speedIncrement = 100;
-		playerSpeed = 200;
+		playerSpeed = 300;
 		dangerZone = 400;
 		endPowerTime = System.currentTimeMillis();
 		// load the drop sound effect and the rain background "music"
@@ -70,10 +70,10 @@ public class SomeGame extends ApplicationAdapter {
 
 		// create a Rectangle to logically represent the player
 		player = new Player();
-		player.x = 480 / 2 - 40 / 2; // center the player horizontally
+		player.x = 480 / 2 - 50 / 2; // center the player horizontally
 		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
-		player.width = 34;
-		player.height = 34;
+		player.width = 46;
+		player.height = 46;
 
 		// create joystick
 		joystick = new Rectangle();
@@ -90,7 +90,7 @@ public class SomeGame extends ApplicationAdapter {
 		barriers = new ArrayList<Barrier>();
 		switches = new ArrayList<Switch>();
 		powers = new ArrayList<Power>();
-		boolean[] temp = {true, true, true, true, true, true, true, true, true, true, true};
+		boolean[] temp = {true, true, true, true, true, true, true, true, true};
 		wallCoord(temp);
 		spawnObstacle(current);
 		spawnSides();
@@ -101,9 +101,9 @@ public class SomeGame extends ApplicationAdapter {
 		int out_index = 0;
 
 		while (!test) {
-			int temp = MathUtils.random(0, 10);
+			int temp = MathUtils.random(0, 8);
 			for (int i = 0; i < temp; i++) {
-				int coord = MathUtils.random(0,10);
+				int coord = MathUtils.random(0,8);
 				current[coord] = true;
 			}
 			for (int i = 0; i < current.length; i++){
@@ -146,10 +146,10 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
 				Obstacle obstacle = new Obstacle();
-				obstacle.x = (40 * i) + 20;
+				obstacle.x = (50 * i) + 15;
 				obstacle.y = 800;
-				obstacle.width = 40;
-				obstacle.height = 40;
+				obstacle.width = 50;
+				obstacle.height = 50;
 				obstacles.add(obstacle);
 			}
 			current[i] = false;
@@ -160,10 +160,10 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
 				Power power = new Power(TYPES_OF_POWER[(int)(Math.random()*TYPES_OF_POWER.length)]);
-				power.x = (40 * i) + 20;
+				power.x = (50 * i) + 15;
 				power.y = 800;
-				power.width = 40;
-				power.height = 40;
+				power.width = 50;
+				power.height = 50;
 				powers.add(power);
 			}
 			current[i] = false;
@@ -174,10 +174,10 @@ public class SomeGame extends ApplicationAdapter {
 	private void spawnSides(){
 		for (int i = 0; i < 2; i++) {
 			SideWall sideWall = new SideWall();
-			sideWall.x = (460*i);
+			sideWall.x = (465*i);
 			sideWall.y = 800;
-			sideWall.width = 20;
-			sideWall.height = 40;
+			sideWall.width = 15;
+			sideWall.height = 50;
 			sideWalls.add(sideWall);
 		}
 	}
@@ -238,7 +238,7 @@ public class SomeGame extends ApplicationAdapter {
 
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
-		if(TimeUtils.nanoTime() - lastDropTime > 400000000) {
+		if(TimeUtils.nanoTime() - lastDropTime > 500000000) {
 			wallCoord(path);
 			spawnObstacle(current);
 			spawnSides();
@@ -256,7 +256,7 @@ public class SomeGame extends ApplicationAdapter {
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
 			raindrop.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(raindrop.y + 40 < 0) iter.remove();
+			if(raindrop.y + 50 < 0) iter.remove();
 //			if(raindrop.overlaps(player)) {
 //				dropSound.play();
 //				iter.remove();
@@ -265,7 +265,7 @@ public class SomeGame extends ApplicationAdapter {
 		while(iter2.hasNext()) {
 			Rectangle side = iter2.next();
 			side.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(side.y + 40 < 0) iter2.remove();
+			if(side.y + 50 < 0) iter2.remove();
 		}
 	}
 
@@ -359,11 +359,11 @@ public class SomeGame extends ApplicationAdapter {
 	}
 
 	private boolean collisionCheck(){
-		if (player.x > 460 - player.width ){
-			player.x = 460 - player.width;
+		if (player.x > 465 - player.width ){
+			player.x = 465 - player.width;
 		}
-		if (player.x < 20){
-			player.x = 20;
+		if (player.x < 15){
+			player.x = 15;
 		}
 //		collide with normal wall obstacle
 		for (Obstacle obstacle: obstacles) {
@@ -488,7 +488,7 @@ class GameObject extends Rectangle {
 class SideWall extends GameObject {
 	public SideWall(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("wall3.3.png")));
+		this.setImage(new Texture(Gdx.files.internal("wall4.2.png")));
 	}
 }
 
@@ -508,7 +508,7 @@ class Power extends GameObject {
 class Obstacle extends GameObject {
 	public Obstacle(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("wall3.1.png")));
+		this.setImage(new Texture(Gdx.files.internal("wall4.1.png")));
 	}
 }
 
@@ -530,7 +530,7 @@ class Player extends GameObject {
 	private String power;
 	public Player(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("player_temp.png")));
+		this.setImage(new Texture(Gdx.files.internal("player_temp1.png")));
 	}
 
 	public void setPower(String power) {
