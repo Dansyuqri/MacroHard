@@ -2,7 +2,6 @@ package com.macrohard.game;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -21,43 +20,25 @@ import com.badlogic.gdx.utils.TimeUtils;
 public class SomeGame extends ApplicationAdapter {
 	//TODO: spawn a power using these arrays (Minh)
 	private final String[] TYPES_OF_POWER = {"slowGameDown","fewerObstacles","speedPlayerUp","dangerZoneHigher"};
-
 	private Texture joystickImage;
 	private Texture joystickCentreImage;
-
-//	private Sound dropSound;
-//	private Music rainMusic;
-
+	private Sound dropSound;
+	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
 	private Player player;
 	private Rectangle joystick;
 	private Rectangle joystickCentre;
-
-	/**
-	 Array List of game objects. Each array list contains all of a single item that is currently on
-	 the screen/in play
-	 */
 	private ArrayList<Obstacle> obstacles;
 	private ArrayList<SideWall> sideWalls;
 	private ArrayList<Switch> switches;
 	private ArrayList<Barrier> barriers;
 	private ArrayList<Power> powers;
-
 	private long lastDropTime, endPowerTime;
-	private int powerCounter, doorCounter;
 	private boolean touchHeld = false;
 	private int gameSpeed, speedIncrement, playerSpeed, dangerZone;
-
-	/**
-	 Array to keep track of the current path that is reachable from the bottom. Current holds the
-	 coordinates for the walls to spawn
-	 */
 	boolean[] path;
 	boolean[] current = {false, false, false, false, false, false, false, false, false};
-	boolean[] powerUp = {false, false, false, false, false, false, false, false, false};
-	boolean[] doorSwitch = {false, false, false, false, false, false, false, false, false};
-	boolean[] barrier = {false, false, false, false, false, false, false, false, false};
 
 	@Override
 	public void create() {
@@ -91,8 +72,8 @@ public class SomeGame extends ApplicationAdapter {
 		player = new Player();
 		player.x = 480 / 2 - 50 / 2; // center the player horizontally
 		player.y = 400; // bottom left corner of the player is 400 pixels above the bottom screen edge
-		player.width = 40;
-		player.height = 40;
+		player.width = 46;
+		player.height = 46;
 
 		// create joystick
 		joystick = new Rectangle();
@@ -110,27 +91,15 @@ public class SomeGame extends ApplicationAdapter {
 		switches = new ArrayList<Switch>();
 		powers = new ArrayList<Power>();
 		boolean[] temp = {true, true, true, true, true, true, true, true, true};
-		powerCounter = 0;
-		doorCounter = 0;
 		wallCoord(temp);
 		spawnObstacle(current);
-		spawnPower(powerUp);
-		spawnSwitch(doorSwitch);
-		spawnDoor(barrier);
 		spawnSides();
 	}
 
-	/**
-	 Method to calculate and randomize the wall, power, switch etc. placement. It keeps randomly
-	 generating a sequence until it fulfils the condition where the player can reach to the next
-	 layer of walls. I.e, no dead ends. Also ensures that the power is spawned on a 'box' not
-	 occupied by a wall and that switches are reachable.
-	 */
 	private void wallCoord(boolean[] pathin){
 		boolean test = false;
 		int out_index = 0;
 
-		// random generator
 		while (!test) {
 			int temp = MathUtils.random(0, 8);
 			for (int i = 0; i < temp; i++) {
@@ -144,8 +113,6 @@ public class SomeGame extends ApplicationAdapter {
 				}
 			}
 		}
-
-		// updating the path array (only 1 path)
 		for (int k = 0; k < current.length; k++) {
 			if (current[k] && pathin[k]) {
 				pathin[k] = true;
@@ -154,74 +121,27 @@ public class SomeGame extends ApplicationAdapter {
 				pathin[k] = false;
 			}
 		}
-
-		// updating the path array (if there are walkable areas next to the true path then they are
-		// also true)
 		for (int j = 1; j < current.length; j++) {
 			if (out_index + j < current.length) {
 				if (current[out_index + j] && pathin[out_index + j - 1]) {
 					pathin[out_index + j] = true;
-				}
-				else {
-					break;
 				}
 			}
 			if (out_index - j >= 0) {
 				if (current[out_index - j] && pathin[out_index - j + 1]) {
 					pathin[out_index - j] = true;
 				}
-				else {
+				else{
 					break;
 				}
 			}
 		}
 		path = pathin;
-		System.out.println(Arrays.toString(path));
-
-		// spawning power ups after a certain time
-		if (powerCounter > 20){
-			boolean collision = true;
-			while (collision){
-				int temp = MathUtils.random(0,8);
-				if (current[temp]){
-					powerUp[temp] = true;
-					collision = false;
-					powerCounter = 0;
-					break;
-				}
-			}
-		}
-
-		// spawning door switch
-		if (doorCounter == 40){
-			boolean reach = false;
-			while (!reach){
-				int temp = MathUtils.random(0,8);
-				if (path[temp]){
-					doorSwitch[temp] = true;
-					reach = true;
-					break;
-				}
-			}
-		}
-
-		// spawning door/barrier
-		if (doorCounter > 45){
-			for (int i = 0; i < current.length; i++) {
-				if (current[i]) {
-					barrier[i] = true;
-				}
-			}
-			doorCounter = 0;
-		}
 	}
 
 	//TODO: spawn powers, Barriers + Switch (need check condition tgt), etc. (Minh)
 	//TODO: make game speed increases method (Minh)
 
-	/**
-	 Method to spawn the walls using the coordinates from the wallCoord() method
-	 */
 	private void spawnObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
@@ -235,13 +155,10 @@ public class SomeGame extends ApplicationAdapter {
 			current[i] = false;
 		}
 		lastDropTime = TimeUtils.nanoTime();
-		powerCounter += 1;
-		doorCounter += 1;
 	}
-
 	private void spawnPower(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
-			if (map[i]) {
+			if (!map[i]) {
 				Power power = new Power(TYPES_OF_POWER[(int)(Math.random()*TYPES_OF_POWER.length)]);
 				power.x = (50 * i) + 15;
 				power.y = 800;
@@ -249,41 +166,11 @@ public class SomeGame extends ApplicationAdapter {
 				power.height = 50;
 				powers.add(power);
 			}
-			powerUp[i] = false;
+			current[i] = false;
 		}
+		lastDropTime = TimeUtils.nanoTime();
 	}
 
-	private void spawnSwitch(boolean[] map){
-		for (int i = 0; i < map.length; i++) {
-			if (map[i]) {
-				Switch doorSwitch = new Switch();
-				doorSwitch.x = (50 * i) + 15;
-				doorSwitch.y = 800;
-				doorSwitch.width = 50;
-				doorSwitch.height = 50;
-				switches.add(doorSwitch);
-			}
-			doorSwitch[i] = false;
-		}
-	}
-
-	private void spawnDoor(boolean[] map){
-		for (int i = 0; i < map.length; i++) {
-			if (map[i]) {
-				Barrier door = new Barrier();
-				door.x = (50 * i) + 15;
-				door.y = 800;
-				door.width = 50;
-				door.height = 50;
-				barriers.add(door);
-			}
-			barrier[i] = false;
-		}
-	}
-
-	/**
-	 Spawn side walls to fill up the gap between the playing field and the actual maze
-	 */
 	private void spawnSides(){
 		for (int i = 0; i < 2; i++) {
 			SideWall sideWall = new SideWall();
@@ -295,13 +182,6 @@ public class SomeGame extends ApplicationAdapter {
 		}
 	}
 
-
-	/**
-	 Method responsible for most of what the player will see. It handles the drawing of the images
-	 on top of the rectangles. It also handles deletion once it exits the screen as well as the
-	 spawning of new walls, barriers, switches etc. It also handles the movement of the walls, or
-	 at least the illusion of the player moving through the maze.
-	 */
 	@Override
 	public void render() {
 		// clear the screen with a dark blue color. The
@@ -348,9 +228,9 @@ public class SomeGame extends ApplicationAdapter {
 
 		processInput();
 //		processInputTilt();
-//		if (barriers.size() != 0) {
-//			removeBarriers();
-//		}
+		if (barriers.size() != 0) {
+			removeBarriers();
+		}
 //		constantly check if any power/DangerZone's effect still lingers
 		effectPower();
 		notifyDangerZone();
@@ -359,12 +239,8 @@ public class SomeGame extends ApplicationAdapter {
 		// check if we need to create a new raindrop
 		//TODO: Implement alternate checking mechanism (Sam)
 		if(TimeUtils.nanoTime() - lastDropTime > 500000000) {
-//		if (obstacles.get(obstacles.size()-1).y < 750){
 			wallCoord(path);
 			spawnObstacle(current);
-			spawnPower(powerUp);
-			spawnSwitch(doorSwitch);
-			spawnDoor(barrier);
 			spawnSides();
 		}
 
@@ -377,9 +253,6 @@ public class SomeGame extends ApplicationAdapter {
 
 		Iterator<Obstacle> iter = obstacles.iterator();
 		Iterator<SideWall> iter2 = sideWalls.iterator();
-		Iterator<Power> iter3 = powers.iterator();
-		Iterator<Switch> iter4 = switches.iterator();
-		Iterator<Barrier> iter5 = barriers.iterator();
 		while(iter.hasNext()) {
 			Rectangle raindrop = iter.next();
 			raindrop.y -= gameSpeed*Gdx.graphics.getDeltaTime();
@@ -394,26 +267,8 @@ public class SomeGame extends ApplicationAdapter {
 			side.y -= gameSpeed*Gdx.graphics.getDeltaTime();
 			if(side.y + 50 < 0) iter2.remove();
 		}
-		while(iter3.hasNext()){
-			Rectangle power = iter3.next();
-			power.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(power.y + 50 < 0) iter3.remove();
-		}
-		while(iter4.hasNext()){
-			Rectangle swt = iter4.next();
-			swt.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(swt.y + 50 < 0) iter4.remove();
-		}
-		while(iter5.hasNext()){
-			Rectangle door = iter5.next();
-			door.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(door.y + 50 < 0) iter5.remove();
-		}
 	}
 
-	/**
-	 Method for tilt controls for the game
-	 */
 	private void processInputTilt(){
 		float x = Gdx.input.getRoll();
 		float y = Gdx.input.getPitch();
@@ -427,10 +282,6 @@ public class SomeGame extends ApplicationAdapter {
 		player.y += incy * Gdx.graphics.getDeltaTime();
 	}
 
-
-	/**
-	 Spawns a joystick at the position that the screen was touched at
-	 */
 	private void processInput() {
 		float relativex = 0;
 		float relativey = 0;
@@ -469,10 +320,6 @@ public class SomeGame extends ApplicationAdapter {
 			omniMove(cos, sin);
 		}
 	}
-
-	/**
-	 Method handling power-ups
-	 */
 	boolean setPowerLock = true;
 	private void effectPower(){
 		if (System.currentTimeMillis() > endPowerTime) {
@@ -511,10 +358,6 @@ public class SomeGame extends ApplicationAdapter {
 		barriers.clear();
 	}
 
-	/**
-	 Method handling collision. If there is an overlap over an object that should be impassable,
-	 the player will be moved back to his previous position (remembered by a temporary variable)
-	 */
 	private boolean collisionCheck(){
 		if (player.x > 465 - player.width ){
 			player.x = 465 - player.width;
@@ -539,7 +382,6 @@ public class SomeGame extends ApplicationAdapter {
 			if (player.overlaps(eachSwitch)){
 				// change this to another different switch image
 				eachSwitch.setImage(new Texture(Gdx.files.internal("joystick_centre.png")));
-				removeBarriers();
 				// then notify server
 			}
 		}
@@ -565,44 +407,6 @@ public class SomeGame extends ApplicationAdapter {
 		if (collisionCheck()){
 			player.y = prevy;
 		}
-	}
-
-	private void orthoMove(float relativex, float relativey){
-		if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveRight();
-			return;
-		}
-
-		if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveLeft();
-			return;
-		}
-
-		if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveUp();
-			return;
-		}
-
-		if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveDown();
-			return;
-		}
-	}
-
-	private void moveUp(){
-		player.y += playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveDown(){
-		player.y -= playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveRight(){
-		player.x += playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveLeft(){
-		player.x -= playerSpeed*Gdx.graphics.getDeltaTime();
 	}
 
 	@Override
@@ -680,7 +484,7 @@ class Switch extends Obstacle {
 class Barrier extends Obstacle {
 	public Barrier(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("Wall.png")));
+		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
 	}
 }
 
@@ -688,7 +492,7 @@ class Player extends GameObject {
 	private String power;
 	public Player(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("player_temp.png")));
+		this.setImage(new Texture(Gdx.files.internal("player_temp1.png")));
 	}
 
 	public void setPower(String power) {
