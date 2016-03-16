@@ -78,7 +78,7 @@ public class MainMenu extends ApplicationAdapter{
 
     @Override
     public void show() {
-        //game.setScreen(new SomeGame);
+        //game.setScreen(new ThisGame);
     }
 
     @Override
