@@ -122,11 +122,8 @@ public class SomeGame extends ApplicationAdapter {
 		powerCounter = 0;
 		doorCounter = 0;
 		wallCoord(temp);
-		spawnObstacle(current);
-		spawnPower(powerUp);
-		spawnSwitch(doorSwitch);
-		spawnDoor(barrier);
-		spawnSides();
+		createObstacle(current);
+		createSides();
 		spawnBg();
 	}
 
@@ -232,7 +229,23 @@ public class SomeGame extends ApplicationAdapter {
 	/**
 	 Method to spawn the walls using the coordinates from the wallCoord() method
 	 */
-	private void spawnObstacle(boolean[] map) {
+	private void spawnObstacle(boolean[] map, float in) {
+		for (int i = 0; i < map.length; i++) {
+			if (!map[i]) {
+				Obstacle obstacle = new Obstacle();
+				obstacle.x = (spriteWidth * i) + 15;
+				obstacle.y = in;
+				obstacle.width = spriteWidth;
+				obstacle.height = spriteHeight;
+				obstacles.add(obstacle);
+			}
+			current[i] = false;
+		}
+		powerCounter += 1;
+		doorCounter += 1;
+	}
+
+	private void createObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
 				Obstacle obstacle = new Obstacle();
@@ -253,7 +266,7 @@ public class SomeGame extends ApplicationAdapter {
 			if (map[i]) {
 				Power power = new Power(TYPES_OF_POWER[(int)(Math.random()*TYPES_OF_POWER.length)]);
 				power.x = (spriteWidth * i) + 15;
-				power.y = 800;
+				power.y = sideWalls.get(sideWalls.size()-1).y+50;
 				power.width = spriteWidth;
 				power.height = spriteHeight;
 				powers.add(power);
@@ -267,7 +280,7 @@ public class SomeGame extends ApplicationAdapter {
 			if (map[i]) {
 				Switch doorSwitch = new Switch();
 				doorSwitch.x = (spriteWidth * i) + 15;
-				doorSwitch.y = 800;
+				doorSwitch.y = sideWalls.get(sideWalls.size()-1).y+50;
 				doorSwitch.width = spriteWidth;
 				doorSwitch.height = spriteHeight;
 				switches.add(doorSwitch);
@@ -281,7 +294,7 @@ public class SomeGame extends ApplicationAdapter {
 			if (map[i]) {
 				Barrier door = new Barrier();
 				door.x = (spriteWidth * i) + 15;
-				door.y = 800;
+				door.y = sideWalls.get(sideWalls.size()-1).y+50;
 				door.width = spriteWidth;
 				door.height = spriteHeight;
 				barriers.add(door);
@@ -293,7 +306,18 @@ public class SomeGame extends ApplicationAdapter {
 	/**
 	 Spawn side walls to fill up the gap between the playing field and the actual maze
 	 */
-	private void spawnSides(){
+	private void spawnSides(float in){
+		for (int i = 0; i < 2; i++) {
+			SideWall sideWall = new SideWall();
+			sideWall.x = (465*i);
+			sideWall.y = in;
+			sideWall.width = 15;
+			sideWall.height = spriteHeight;
+			sideWalls.add(sideWall);
+		}
+	}
+
+	private void createSides(){
 		for (int i = 0; i < 2; i++) {
 			SideWall sideWall = new SideWall();
 			sideWall.x = (465*i);
@@ -385,13 +409,14 @@ public class SomeGame extends ApplicationAdapter {
 //		effectDangerZone();
 
 		// check if we need to create a new obstacle
-		if (sideWalls.get(sideWalls.size()-1).y < 749){
+		while (sideWalls.get(sideWalls.size()-1).y < 999){
+			float temp = sideWalls.get(sideWalls.size()-1).y + 50;
 			wallCoord(path);
-			spawnObstacle(current);
+			spawnObstacle(current, temp);
 			spawnPower(powerUp);
 			spawnSwitch(doorSwitch);
 			spawnDoor(barrier);
-			spawnSides();
+			spawnSides(temp);
 		}
 		if(bg.get(bg.size()-1).y < 1) {
 			spawnBg();
@@ -401,7 +426,7 @@ public class SomeGame extends ApplicationAdapter {
 		// the screen or that hit the player. In the later case we play back
 		// a sound effect as well.
 
-		player.y -= 100*Gdx.graphics.getDeltaTime();
+		player.y -= gameSpeed*Gdx.graphics.getDeltaTime();
 
 		Iterator<Obstacle> iter = obstacles.iterator();
 		Iterator<SideWall> iter2 = sideWalls.iterator();
