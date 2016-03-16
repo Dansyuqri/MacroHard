@@ -42,9 +42,11 @@ public class SomeGame extends ApplicationAdapter {
 	private ArrayList<SideWall> sideWalls;
 	private ArrayList<Switch> switches;
 	private ArrayList<Barrier> barriers;
+	private ArrayList<BarrierOpen> barrierOpens;
 	private ArrayList<Power> powers;
+	private ArrayList<Background> bg;
 
-	private long lastDropTime, endPowerTime;
+	private long endPowerTime;
 	private int powerCounter, doorCounter;
 	private boolean touchHeld = false;
 	private int gameSpeed, speedIncrement, playerSpeed, dangerZone;
@@ -58,6 +60,9 @@ public class SomeGame extends ApplicationAdapter {
 	boolean[] powerUp = {false, false, false, false, false, false, false, false, false};
 	boolean[] doorSwitch = {false, false, false, false, false, false, false, false, false};
 	boolean[] barrier = {false, false, false, false, false, false, false, false, false};
+
+	final int spriteWidth = 50;
+	final int spriteHeight = 50;
 
 	@Override
 	public void create() {
@@ -109,6 +114,10 @@ public class SomeGame extends ApplicationAdapter {
 		barriers = new ArrayList<Barrier>();
 		switches = new ArrayList<Switch>();
 		powers = new ArrayList<Power>();
+		barrierOpens = new ArrayList<BarrierOpen>();
+		bg = new ArrayList<Background>();
+		createBg();
+
 		boolean[] temp = {true, true, true, true, true, true, true, true, true};
 		powerCounter = 0;
 		doorCounter = 0;
@@ -118,6 +127,7 @@ public class SomeGame extends ApplicationAdapter {
 		spawnSwitch(doorSwitch);
 		spawnDoor(barrier);
 		spawnSides();
+		spawnBg();
 	}
 
 	/**
@@ -132,7 +142,7 @@ public class SomeGame extends ApplicationAdapter {
 
 		// random generator
 		while (!test) {
-			int temp = MathUtils.random(0, 8);
+			int temp = MathUtils.random(1, 9);
 			for (int i = 0; i < temp; i++) {
 				int coord = MathUtils.random(0,8);
 				current[coord] = true;
@@ -175,8 +185,8 @@ public class SomeGame extends ApplicationAdapter {
 				}
 			}
 		}
+
 		path = pathin;
-		System.out.println(Arrays.toString(path));
 
 		// spawning power ups after a certain time
 		if (powerCounter > 20){
@@ -226,15 +236,14 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
 				Obstacle obstacle = new Obstacle();
-				obstacle.x = (50 * i) + 15;
+				obstacle.x = (spriteWidth * i) + 15;
 				obstacle.y = 800;
-				obstacle.width = 50;
-				obstacle.height = 50;
+				obstacle.width = spriteWidth;
+				obstacle.height = spriteHeight;
 				obstacles.add(obstacle);
 			}
 			current[i] = false;
 		}
-		lastDropTime = TimeUtils.nanoTime();
 		powerCounter += 1;
 		doorCounter += 1;
 	}
@@ -243,10 +252,10 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (map[i]) {
 				Power power = new Power(TYPES_OF_POWER[(int)(Math.random()*TYPES_OF_POWER.length)]);
-				power.x = (50 * i) + 15;
+				power.x = (spriteWidth * i) + 15;
 				power.y = 800;
-				power.width = 50;
-				power.height = 50;
+				power.width = spriteWidth;
+				power.height = spriteHeight;
 				powers.add(power);
 			}
 			powerUp[i] = false;
@@ -257,10 +266,10 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (map[i]) {
 				Switch doorSwitch = new Switch();
-				doorSwitch.x = (50 * i) + 15;
+				doorSwitch.x = (spriteWidth * i) + 15;
 				doorSwitch.y = 800;
-				doorSwitch.width = 50;
-				doorSwitch.height = 50;
+				doorSwitch.width = spriteWidth;
+				doorSwitch.height = spriteHeight;
 				switches.add(doorSwitch);
 			}
 			doorSwitch[i] = false;
@@ -271,10 +280,10 @@ public class SomeGame extends ApplicationAdapter {
 		for (int i = 0; i < map.length; i++) {
 			if (map[i]) {
 				Barrier door = new Barrier();
-				door.x = (50 * i) + 15;
+				door.x = (spriteWidth * i) + 15;
 				door.y = 800;
-				door.width = 50;
-				door.height = 50;
+				door.width = spriteWidth;
+				door.height = spriteHeight;
 				barriers.add(door);
 			}
 			barrier[i] = false;
@@ -290,11 +299,28 @@ public class SomeGame extends ApplicationAdapter {
 			sideWall.x = (465*i);
 			sideWall.y = 800;
 			sideWall.width = 15;
-			sideWall.height = 50;
+			sideWall.height = spriteHeight;
 			sideWalls.add(sideWall);
 		}
 	}
 
+	private void createBg(){
+		Background backg = new Background();
+		backg.x = 0;
+		backg.y = 0;
+		backg.width = 480;
+		backg.height = 800;
+		bg.add(backg);
+	}
+
+	private void spawnBg(){
+		Background backg = new Background();
+		backg.x = 0;
+		backg.y = 800;
+		backg.width = 480;
+		backg.height = 800;
+		bg.add(backg);
+	}
 
 	/**
 	 Method responsible for most of what the player will see. It handles the drawing of the images
@@ -321,7 +347,9 @@ public class SomeGame extends ApplicationAdapter {
 		// begin a new batch and draw the player and
 		// all drops
 		batch.begin();
-		batch.draw(player.getImage(), player.x, player.y);
+		for(Background backg: bg) {
+			batch.draw(backg.getImage(), backg.x, backg.y);
+		}
 		for(Obstacle obstacle: obstacles) {
 			batch.draw(obstacle.getImage(), obstacle.x, obstacle.y);
 		}
@@ -337,7 +365,10 @@ public class SomeGame extends ApplicationAdapter {
 		for(Barrier barrier: barriers){
 			batch.draw(barrier.getImage(), barrier.x, barrier.y);
 		}
-
+		for(BarrierOpen barrier: barrierOpens){
+			batch.draw(barrier.getImage(), barrier.x, barrier.y);
+		}
+		batch.draw(player.getImage(), player.x, player.y);
 		if (touchHeld) {
 			batch.draw(joystickImage, joystick.x, joystick.y);
 			batch.draw(joystickCentreImage, joystickCentre.x, joystickCentre.y);
@@ -347,19 +378,14 @@ public class SomeGame extends ApplicationAdapter {
 		// process user input
 
 		processInput();
-//		processInputTilt();
-//		if (barriers.size() != 0) {
-//			removeBarriers();
-//		}
+
 //		constantly check if any power/DangerZone's effect still lingers
 		effectPower();
 		notifyDangerZone();
 //		effectDangerZone();
 
-		// check if we need to create a new raindrop
-		//TODO: Implement alternate checking mechanism (Sam)
-		if(TimeUtils.nanoTime() - lastDropTime > 500000000) {
-//		if (obstacles.get(obstacles.size()-1).y < 750){
+		// check if we need to create a new obstacle
+		if (sideWalls.get(sideWalls.size()-1).y < 749){
 			wallCoord(path);
 			spawnObstacle(current);
 			spawnPower(powerUp);
@@ -367,7 +393,9 @@ public class SomeGame extends ApplicationAdapter {
 			spawnDoor(barrier);
 			spawnSides();
 		}
-
+		if(bg.get(bg.size()-1).y < 1) {
+			spawnBg();
+		}
 
 		// move the obstacles, remove any that are beneath the bottom edge of
 		// the screen or that hit the player. In the later case we play back
@@ -380,34 +408,42 @@ public class SomeGame extends ApplicationAdapter {
 		Iterator<Power> iter3 = powers.iterator();
 		Iterator<Switch> iter4 = switches.iterator();
 		Iterator<Barrier> iter5 = barriers.iterator();
+		Iterator<BarrierOpen> iter6 = barrierOpens.iterator();
+		Iterator<Background> iter7 = bg.iterator();
 		while(iter.hasNext()) {
-			Rectangle raindrop = iter.next();
-			raindrop.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(raindrop.y + 50 < 0) iter.remove();
-//			if(raindrop.overlaps(player)) {
-//				dropSound.play();
-//				iter.remove();
-//			}
+			Rectangle obstacle = iter.next();
+			obstacle.y -= gameSpeed*Gdx.graphics.getDeltaTime();
+			if(obstacle.y + spriteHeight < 0) iter.remove();
 		}
 		while(iter2.hasNext()) {
 			Rectangle side = iter2.next();
 			side.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(side.y + 50 < 0) iter2.remove();
+			if(side.y + spriteHeight < 0) iter2.remove();
 		}
 		while(iter3.hasNext()){
 			Rectangle power = iter3.next();
 			power.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(power.y + 50 < 0) iter3.remove();
+			if(power.y + spriteHeight < 0) iter3.remove();
 		}
 		while(iter4.hasNext()){
 			Rectangle swt = iter4.next();
 			swt.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(swt.y + 50 < 0) iter4.remove();
+			if(swt.y + spriteHeight < 0) iter4.remove();
 		}
 		while(iter5.hasNext()){
 			Rectangle door = iter5.next();
 			door.y -= gameSpeed*Gdx.graphics.getDeltaTime();
-			if(door.y + 50 < 0) iter5.remove();
+			if(door.y + spriteHeight < 0) iter5.remove();
+		}
+		while(iter6.hasNext()){
+			Rectangle door = iter6.next();
+			door.y -= gameSpeed*Gdx.graphics.getDeltaTime();
+			if(door.y + spriteHeight < 0) iter6.remove();
+		}
+		while(iter7.hasNext()){
+			Rectangle bg = iter7.next();
+			bg.y -= gameSpeed*Gdx.graphics.getDeltaTime();
+			if(bg.y + 800 < 0) iter7.remove();
 		}
 	}
 
@@ -538,7 +574,15 @@ public class SomeGame extends ApplicationAdapter {
 		for (Switch eachSwitch:switches){
 			if (player.overlaps(eachSwitch)){
 				// change this to another different switch image
-				eachSwitch.setImage(new Texture(Gdx.files.internal("joystick_centre.png")));
+				eachSwitch.setImage(new Texture(Gdx.files.internal("switch_on.png")));
+				for (Barrier barrier: barriers){
+					BarrierOpen bg = new BarrierOpen();
+					bg.x = barrier.x;
+					bg.y = barrier.y;
+					bg.width = 50;
+					bg.height = 50;
+					barrierOpens.add(bg);
+				}
 				removeBarriers();
 				// then notify server
 			}
@@ -558,51 +602,25 @@ public class SomeGame extends ApplicationAdapter {
 		float prevx = player.x;
 		float prevy = player.y;
 		player.x += x * playerSpeed * Gdx.graphics.getDeltaTime();
-		if (collisionCheck()){
-			player.x = prevx;
-		}
 		player.y += y * playerSpeed * Gdx.graphics.getDeltaTime();
 		if (collisionCheck()){
+			player.x = prevx;
 			player.y = prevy;
+			if (x > 0) x = 1;
+			if (x < 0) x = -1;
+			if (y > 0) y = 1;
+			if (y < 0) y = -1;
+			player.x += x * playerSpeed * Gdx.graphics.getDeltaTime();
+			if (collisionCheck()){
+				player.x = prevx;
+			}
+			player.y += y * playerSpeed * Gdx.graphics.getDeltaTime();
+			if (collisionCheck()){
+				player.y = prevy;
+			}
+			System.out.println(player.x);
+			System.out.println(player.y);
 		}
-	}
-
-	private void orthoMove(float relativex, float relativey){
-		if (relativex > 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveRight();
-			return;
-		}
-
-		if (relativex < 0 && Math.abs(relativex) > Math.abs(relativey)){
-			moveLeft();
-			return;
-		}
-
-		if (relativey > 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveUp();
-			return;
-		}
-
-		if (relativey < 0 && Math.abs(relativex) < Math.abs(relativey)){
-			moveDown();
-			return;
-		}
-	}
-
-	private void moveUp(){
-		player.y += playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveDown(){
-		player.y -= playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveRight(){
-		player.x += playerSpeed*Gdx.graphics.getDeltaTime();
-	}
-
-	private void moveLeft(){
-		player.x -= playerSpeed*Gdx.graphics.getDeltaTime();
 	}
 
 	@Override
@@ -622,6 +640,9 @@ public class SomeGame extends ApplicationAdapter {
 		}
 		for (SideWall sideWall:sideWalls) {
 			sideWall.getImage().dispose();
+		}
+		for (BarrierOpen barrier:barrierOpens) {
+			barrier.getImage().dispose();
 		}
 		player.getImage().dispose();
 		joystickImage.dispose();
@@ -673,14 +694,21 @@ class Obstacle extends GameObject {
 class Switch extends Obstacle {
 	public Switch(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("bucket.png")));
+		this.setImage(new Texture(Gdx.files.internal("switch_off.png")));
 	}
 }
 
 class Barrier extends Obstacle {
 	public Barrier(){
 		super();
-		this.setImage(new Texture(Gdx.files.internal("Wall.png")));
+		this.setImage(new Texture(Gdx.files.internal("gate_closed.png")));
+	}
+}
+
+class BarrierOpen extends Obstacle{
+	public BarrierOpen(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("gate_open.png")));
 	}
 }
 
@@ -697,5 +725,12 @@ class Player extends GameObject {
 
 	public String getPower() {
 		return power;
+	}
+}
+
+class Background extends GameObject {
+	public Background(){
+		super();
+		this.setImage(new Texture(Gdx.files.internal("bg.png")));
 	}
 }
