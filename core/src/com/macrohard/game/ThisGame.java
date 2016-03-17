@@ -2,7 +2,6 @@ package com.macrohard.game;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -76,8 +75,6 @@ public class ThisGame extends ApplicationAdapter {
 
 		//TODO: For later development declare all constants first instead of using them directly
 		//TODO: For later development try to have an object hierarchy and place things like their images in private fields (Minh/Syuqri)
-		//TODO: For later development also separate certain methods into different threads, e.g. maybe rendering and spawning obstacles can have individual threads (Syuqri)
-
 		// load the images
 		joystickImage = new Texture(Gdx.files.internal("joystick.png"));
 		joystickCentreImage = new Texture(Gdx.files.internal("joystick_centre.png"));
@@ -120,8 +117,8 @@ public class ThisGame extends ApplicationAdapter {
 		powerCounter = 0;
 		doorCounter = 0;
 
-		PlayerInputListener playerInputListener = new PlayerInputListener();
-		playerInputListener.start();
+//		PlayerInputListener playerInputListener = new PlayerInputListener();
+//		playerInputListener.start();
 
 		MapMaker mapMaker = new MapMaker();
 		mapMaker.start();
@@ -210,16 +207,12 @@ public class ThisGame extends ApplicationAdapter {
 
 		batch.end();
 
-		// process user input
-
 //		constantly check if any power/DangerZone's effect still lingers
 		effectPower();
 		notifyDangerZone();
 //		effectDangerZone();
 
-		// move the obstacles, remove any that are beneath the bottom edge of
-		// the screen or that hit the player. In the later case we play back
-		// a sound effect as well.
+		// move the obstacles, remove any that are beneath the bottom edge of the screen.
 
 		player.y -= gameSpeed * Gdx.graphics.getDeltaTime();
 
@@ -370,6 +363,14 @@ public class ThisGame extends ApplicationAdapter {
 	}
 
 	private void processInput() {
+
+		if(Gdx.input.isTouched()){
+			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+			touched = true;
+		} else {
+			touched = false;
+		}
+
 		float relativex = 0;
 		float relativey = 0;
 		if (touched) {
@@ -688,26 +689,6 @@ public class ThisGame extends ApplicationAdapter {
 			player.y += y * playerSpeed * Gdx.graphics.getDeltaTime();
 			if (collidesObstacle()){
 				player.y = prevy;
-			}
-		}
-	}
-
-	class PlayerInputListener extends Thread {
-
-		@Override
-		public void run() {
-			while (true) {
-				if (isInterrupted()){
-					break;
-				}
-				if (running) {
-					if(Gdx.input.isTouched()){
-						touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-						touched = true;
-					} else {
-						touched = false;
-					}
-				}
 			}
 		}
 	}
