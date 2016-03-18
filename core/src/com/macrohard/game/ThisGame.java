@@ -15,7 +15,7 @@ import com.badlogic.gdx.math.Vector3;
 
 public class ThisGame extends ApplicationAdapter {
 
-	private boolean running;
+	boolean running;
 
 	//TODO: spawn a power using these arrays (Minh)
 	private final String[] TYPES_OF_POWER = {"slowGameDown","fewerObstacles","speedPlayerUp","dangerZoneHigher"};
@@ -120,7 +120,7 @@ public class ThisGame extends ApplicationAdapter {
 //		PlayerInputListener playerInputListener = new PlayerInputListener();
 //		playerInputListener.start();
 
-		MapMaker mapMaker = new MapMaker();
+		MapMaker mapMaker = new MapMaker(this);
 		mapMaker.start();
 
 	}
@@ -425,7 +425,7 @@ public class ThisGame extends ApplicationAdapter {
 	 layer of walls. I.e, no dead ends. Also ensures that the power is spawned on a 'box' not
 	 occupied by a wall and that switches are reachable.
 	 */
-	private void wallCoord(){
+	void wallCoord(){
 		boolean test = false;
 		int out_index = 0;
 		boolean[] new_row = {false, false, false, false, false, false, false, false, false};
@@ -546,7 +546,7 @@ public class ThisGame extends ApplicationAdapter {
 		doorCounter += 1;
 	}
 
-	private void createObstacle(boolean[] map) {
+	void createObstacle(boolean[] map) {
 		for (int i = 0; i < map.length; i++) {
 			if (!map[i]) {
 				Obstacle obstacle = new Obstacle();
@@ -614,7 +614,7 @@ public class ThisGame extends ApplicationAdapter {
 		}
 	}
 
-	private void createSides(){
+	void createSides(){
 		for (int i = 0; i < 2; i++) {
 			SideWall sideWall = new SideWall();
 			sideWall.x = (465*i);
@@ -625,7 +625,7 @@ public class ThisGame extends ApplicationAdapter {
 		}
 	}
 
-	private void createBg(){
+	void createBg(){
 		Background backg = new Background();
 		backg.x = 0;
 		backg.y = 0;
@@ -693,25 +693,7 @@ public class ThisGame extends ApplicationAdapter {
 		}
 	}
 
-	class MapMaker extends Thread {
+	private void handle(byte[] message){
 
-		MapMaker(){
-			wallCoord();
-			createBg();
-			createObstacle(path);
-			createSides();
-		}
-
-		@Override
-		public void run() {
-			while (true) {
-				if (isInterrupted()){
-					break;
-				}
-				if (running) {
-					wallCoord();
-				}
-			}
-		}
 	}
 }
